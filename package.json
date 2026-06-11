@@ -1,0 +1,14 @@
+{
+  "name": "deepseek-usage",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js",
+    "dev": "node --watch main.js"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "@hono/node-server": "^1.13.0",
+    "dotenv": "^16.4.0"
+  }
+}

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek Usage</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --border: #e6e8ec;
+    --text: #14161a;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+    --accent: #3b5de7;
+    --accent-light: #eef1ff;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+
+  .app {
+    max-width: 1100px; margin: 0 auto; padding: 28px 32px 40px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .header-left h1 { font-size: 20px; font-weight: 650; letter-spacing: -0.3px; }
+
+  .header-nav {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px;
+  }
+  .header-nav button {
+    width: 30px; height: 30px; border: none; background: none; border-radius: 6px;
+    cursor: pointer; font-size: 15px; color: var(--text-secondary); display: flex;
+    align-items: center; justify-content: center; transition: all 0.12s;
+  }
+  .header-nav button:hover { background: var(--bg); color: var(--text); }
+  .header-nav .month-label {
+    font-size: 14px; font-weight: 600; padding: 0 12px; min-width: 140px; text-align: center;
+    color: var(--text); user-select: none;
+  }
+
+  /* ── Stats bar ── */
+  .stats {
+    display: flex; gap: 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 24px; box-shadow: var(--shadow);
+    align-items: center;
+  }
+  .stats-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    color: var(--text-tertiary); padding-right: 16px; border-right: 1px solid var(--border);
+    margin-right: 4px;
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 2px; }
+  .stat-item .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-tertiary); }
+  .stat-item .value { font-size: 18px; font-weight: 650; color: var(--text); }
+  .stat-item .sub { font-size: 12px; color: var(--text-secondary); }
+  .stat-divider { width: 1px; background: var(--border); }
+
+  /* ── Trend chart ── */
+  .trend-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px 8px; box-shadow: var(--shadow);
+  }
+  .trend-card .trend-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .trend-card .trend-header h3 { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .trend-chart-wrap { position: relative; height: 110px; }
+  #trendChart { display: block; width: 100%; height: 100%; }
+
+  /* ── Main content area (calendar left + detail right) ── */
+  .main-grid {
+    display: flex; gap: 16px; flex: 1; min-height: 0;
+  }
+  .main-grid .col-left {
+    width: 28%; flex-shrink: 0;
+  }
+  .main-grid .col-right {
+    flex: 1; min-width: 0;
+  }
+
+  /* ── Calendar heatmap ── */
+  .calendar-section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 14px 10px; box-shadow: var(--shadow); height: 100%;
+  }
+
+  .calendar-header {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
+  }
+  .calendar-header h3 { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+  .heatmap-legend {
+    display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-tertiary); flex-wrap: wrap;
+  }
+  .heatmap-legend .swatch {
+    width: 12px; height: 12px; border-radius: 2px;
+  }
+
+  .dow {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 2px;
+  }
+  .dow span {
+    text-align: center; font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.3px; color: var(--text-tertiary); padding: 1px 0;
+  }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  }
+
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 500; cursor: pointer;
+    transition: all 0.12s; position: relative; border: 1.5px solid transparent;
+    color: var(--text-secondary);
+  }
+  .cal-cell:hover { transform: scale(1.06); z-index: 1; border-color: var(--accent); }
+  .cal-cell.empty { background: transparent !important; cursor: default; }
+  .cal-cell.empty:hover { transform: none; border-color: transparent; }
+  .cal-cell.today { border-color: var(--accent) !important; font-weight: 700; color: var(--accent); }
+  .cal-cell.selected { border-color: var(--text) !important; }
+
+  .cal-cell.l0 { background: #f0f1f3; }
+  .cal-cell.l1 { background: #dbeafe; color: #1e40af; }
+  .cal-cell.l2 { background: #93c5fd; color: #1e3a5f; }
+  .cal-cell.l3 { background: #60a5fa; color: #fff; }
+  .cal-cell.l4 { background: #2563eb; color: #fff; }
+  .cal-cell.l5 { background: #1d4ed8; color: #fff; }
+
+  .cal-cell .day-num { position: absolute; top: 2px; left: 4px; font-size: 8px; font-weight: 600; opacity: 0.6; }
+  .cal-cell .day-cost-label { display: none; }
+  .cal-cell.empty .day-num { display: none; }
+
+  /* ── Detail section (always visible on the right) ── */
+  .detail-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow);
+    height: 100%; display: flex; flex-direction: column;
+  }
+
+  .detail-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;
+  }
+  .detail-header h3 { font-size: 14px; font-weight: 600; flex: 1; display: flex; justify-content: space-between; align-items: center; }
+  .detail-header h3 small { font-weight: 700; color: var(--text-secondary); font-size: 13px; }
+
+  .detail-body {
+    flex: 1; overflow-y: auto; min-height: 0;
+  }
+
+  .detail-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .detail-table th {
+    text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text-tertiary); padding: 6px 8px 8px; border-bottom: 1px solid var(--border);
+  }
+  .detail-table td {
+    padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top;
+  }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table .model-cell { font-weight: 500; }
+  .detail-table .model-cell small { display: block; font-weight: 400; font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+  .detail-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .detail-table .cost-cell { text-align: right; font-weight: 600; }
+
+
+  .detail-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--text-tertiary); font-size: 13px; gap: 8px;
+  }
+  .detail-empty .icon { font-size: 32px; opacity: 0.3; }
+  .detail-empty .hint { font-size: 12px; color: var(--text-tertiary); opacity: 0.6; }
+
+  /* ── Loading overlay ── */
+  .loading-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(245, 246, 248, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s;
+  }
+  .loading-overlay.active { opacity: 1; pointer-events: auto; }
+  .loading-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .app { padding: 16px; }
+    .stats { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+    .stat-divider { display: none; }
+    .header-left h1 { font-size: 17px; }
+    .trend-card { padding: 12px 14px 4px; }
+    .main-grid { flex-direction: column; }
+    .main-grid .col-left { width: 100%; }
+    .calendar-section { padding: 12px 14px; }
+    .detail-section { padding: 12px 14px; min-height: 200px; }
+    .detail-table { font-size: 12px; }
+
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>DeepSeek Usage</h1>
+    </div>
+    <div class="header-nav">
+      <button id="prevBtn">&larr;</button>
+      <span class="month-label" id="monthLabel">June 2026</span>
+      <button id="nextBtn">&rarr;</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="statsBar">
+    <div class="stats-title" id="statsTitle">June 2026</div>
+    <div class="stat-item">
+      <span class="label">Total</span>
+      <span class="value" id="statTotal">₹0.00</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="label">Avg / Day</span>
+      <span class="value" id="statAvg">₹0.00</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="label">Most Used Key</span>
+      <span class="value" id="statTopKey" style="font-size:15px;">—</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="label">Active Days</span>
+      <span class="value" id="statActiveDays">0</span>
+      <span class="sub" id="statSubDays"></span>
+    </div>
+  </div>
+
+  <!-- Trend -->
+  <div class="trend-card">
+    <div class="trend-header">
+      <h3>Daily cost</h3>
+    </div>
+    <div class="trend-chart-wrap"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <!-- Main content: heatmap left, detail right -->
+  <div class="main-grid">
+    <div class="col-left">
+      <div class="calendar-section">
+        <div class="calendar-header">
+          <h3>Usage heatmap</h3>
+          <div class="heatmap-legend">
+            <span>Low</span>
+            <span class="swatch" style="background:#f0f1f3"></span>
+            <span class="swatch" style="background:#dbeafe"></span>
+            <span class="swatch" style="background:#93c5fd"></span>
+            <span class="swatch" style="background:#60a5fa"></span>
+            <span class="swatch" style="background:#2563eb"></span>
+            <span class="swatch" style="background:#1d4ed8"></span>
+            <span>High</span>
+          </div>
+        </div>
+
+        <div class="dow">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="detail-section" id="detailSection">
+        <div class="detail-header">
+          <h3 id="detailTitle">Select a day <small></small></h3>
+        </div>
+        <div class="detail-body" id="detailBody">
+          <div class="detail-empty">
+            <div class="icon">📅</div>
+            <div>Click a day on the heatmap to view usage details</div>
+            <div class="hint">Or click a bar in the chart above</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div>
+
+<script>
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const state = { year: 2026, month: 6 };
+const calGrid = document.getElementById('calGrid');
+const monthLabel = document.getElementById('monthLabel');
+const statTotal = document.getElementById('statTotal');
+const statAvg = document.getElementById('statAvg');
+const statTopKey = document.getElementById('statTopKey');
+const statActiveDays = document.getElementById('statActiveDays');
+const statSubDays = document.getElementById('statSubDays');
+const detailSection = document.getElementById('detailSection');
+const detailTitle = document.getElementById('detailTitle');
+const detailBody = document.getElementById('detailBody');
+
+let usageCache = {};
+let trendChart = null;
+let selectedDate = null;
+
+// ── Helpers ──
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function formatINR(n) {
+  return '\u20b9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getDaysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function getFirstDayOfMonth(year, month) {
+  return new Date(year, month - 1, 1).getDay();
+}
+
+function costLevel(cost, maxCost) {
+  if (cost <= 0) return 0;
+  const ratio = cost / maxCost;
+  if (ratio < 0.05) return 1;
+  if (ratio < 0.15) return 2;
+  if (ratio < 0.35) return 3;
+  if (ratio < 0.6) return 4;
+  return 5;
+}
+
+// ── Loading ──
+
+function showLoading() {
+  document.getElementById('loadingOverlay').classList.add('active');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// ── Fetch ──
+
+async function fetchUsage(year, month) {
+  const key = year + '-' + month;
+  if (usageCache[key]) return usageCache[key];
+  try {
+    const res = await fetch('/api/usage?month=' + month + '&year=' + year);
+    if (!res.ok) return null;
+    const data = await res.json();
+    usageCache[key] = data;
+    return data;
+  } catch { return null; }
+}
+
+// ── Trend chart ──
+
+function renderTrend(data, daysInMonth) {
+  const canvas = document.getElementById('trendChart');
+  if (trendChart) trendChart.destroy();
+
+  const labels = [];
+  const values = [];
+  const dayTotals = {};
+
+  // Build day lookup
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = state.year + '-' + pad(state.month) + '-' + pad(d);
+    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount_in_inr, 0) : 0;
+    labels.push(d);
+    values.push(total);
+    dayTotals[dateStr] = total;
+  }
+
+  const maxVal = Math.max(...values, 1);
+
+  trendChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: values.map(v => v > 0 ? '#3b5de7' : '#e6e8ec'),
+        borderRadius: 2,
+        borderSkipped: false,
+        barPercentage: 0.7,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(items) {
+                  const day = items[0].dataIndex + 1;
+                  const d = new Date(state.year, state.month - 1, day);
+                  return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+                },
+                label: function(item) {
+                  return 'Cost: ' + formatINR(item.raw);
+                },
+              },
+            },
+          },
+      scales: {
+        x: {
+          display: true,
+          grid: { display: false },
+          ticks: { color: '#9ca3af', font: { size: 9 }, maxRotation: 0, autoSkip: true, autoSkipPadding: 8 },
+        },
+        y: { display: false, beginAtZero: true },
+      },
+      onClick(_, elements) {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const day = idx + 1;
+          const dateStr = state.year + '-' + pad(state.month) + '-' + pad(day);
+          selectDay(dateStr);
+        }
+      },
+      onHover(_, elements) {
+        document.getElementById('trendChart').style.cursor = elements.length > 0 ? 'pointer' : 'default';
+      },
+    },
+  });
+
+  return dayTotals;
+}
+
+// ── Calendar heatmap ──
+
+function renderCalendar(data) {
+  const { year, month } = state;
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay = getFirstDayOfMonth(year, month);
+  monthLabel.textContent = MONTHS[month - 1] + ' ' + year;
+  document.getElementById('statsTitle').textContent = year + ' ' + MONTHS[month - 1];
+
+  // Compute per-day totals for heatmap intensity
+  const dayTotals = [];
+  let maxCost = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = year + '-' + pad(month) + '-' + pad(d);
+    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount_in_inr, 0) : 0;
+    dayTotals.push(total);
+    if (total > maxCost) maxCost = total;
+  }
+
+  // Compute stats
+  const totalCost = dayTotals.reduce((s, v) => s + v, 0);
+  const activeDays = dayTotals.filter(v => v > 0).length;
+  const avgCost = activeDays > 0 ? totalCost / activeDays : 0;
+
+  // Top key by total cost
+  const keyTotals = {};
+  if (data) {
+    for (const [dateStr, entries] of Object.entries(data)) {
+      for (const e of entries) {
+        keyTotals[e.api_key_name] = (keyTotals[e.api_key_name] || 0) + e.bill_amount_in_inr;
+      }
+    }
+  }
+  const topKey = Object.entries(keyTotals).sort((a, b) => b[1] - a[1])[0];
+
+  statTotal.textContent = formatINR(totalCost);
+  statAvg.textContent = formatINR(avgCost);
+  statTopKey.textContent = topKey ? topKey[0] : '\u2014';
+  statActiveDays.textContent = activeDays;
+  statSubDays.textContent = 'of ' + daysInMonth + ' days';
+
+  // Build grid
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  calGrid.innerHTML = '';
+
+  for (let i = 0; i < totalCells; i++) {
+    let dayNum = i - firstDay + 1;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      cell.classList.add('empty');
+      calGrid.appendChild(cell);
+      continue;
+    }
+
+    const dateStr = year + '-' + pad(month) + '-' + pad(dayNum);
+    cell.dataset.date = dateStr;
+
+    // Today
+    const today = new Date();
+    if (today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === dayNum) {
+      cell.classList.add('today');
+    }
+
+    // Selected
+    if (selectedDate === dateStr) cell.classList.add('selected');
+
+    // Heat level
+    const cost = dayTotals[dayNum - 1];
+    const level = costLevel(cost, maxCost);
+    cell.classList.add('l' + level);
+
+    // Day number (top-left)
+    const num = document.createElement('span');
+    num.className = 'day-num';
+    num.textContent = dayNum;
+    cell.appendChild(num);
+
+    // Cost label (center)
+    if (cost > 0) {
+      const label = document.createElement('span');
+      label.className = 'day-cost-label';
+      label.textContent = formatINR(cost);
+      cell.appendChild(label);
+    }
+
+    cell.addEventListener('click', () => selectDay(dateStr));
+    calGrid.appendChild(cell);
+  }
+
+  // If selectedDate is still set but no longer in this month, reset
+  if (selectedDate && !selectedDate.startsWith(year + '-' + pad(month))) {
+    selectedDate = null;
+    showEmptyState();
+  }
+}
+
+// ── Detail table ──
+
+function showEmptyState() {
+  detailTitle.innerHTML = 'Select a day <small></small>';
+  detailBody.innerHTML =
+    '<div class="detail-empty">' +
+    '<div class="icon">\ud83d\udcc5</div>' +
+    '<div>Click a day on the heatmap to view usage details</div>' +
+    '<div class="hint">Or click a bar in the chart above</div>' +
+    '</div>';
+}
+
+function selectDay(dateStr) {
+  selectedDate = dateStr;
+  const data = usageCache[state.year + '-' + state.month];
+  if (!data || !data[dateStr]) { showEmptyState(); return; }
+
+  const entries = data[dateStr];
+  const dayTotal = entries.reduce((s, e) => s + e.bill_amount_in_inr, 0);
+  const date = new Date(dateStr + 'T00:00:00');
+
+  detailTitle.innerHTML = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() +
+    ' <small>' + formatINR(dayTotal) + '</small>';
+
+  // Highlight selected cell
+  document.querySelectorAll('.cal-cell.selected').forEach(el => el.classList.remove('selected'));
+  const sel = document.querySelector('.cal-cell[data-date="' + dateStr + '"]');
+  if (sel) sel.classList.add('selected');
+
+  if (entries.length === 0) {
+    detailBody.innerHTML = '<div class="detail-empty">No usage data for this day</div>';
+    return;
+  }
+
+  let html = '<table class="detail-table"><thead><tr>' +
+    '<th>API Key</th><th>Model</th><th class="num">Output</th><th class="num">Cache hit</th><th class="num">Cache miss</th><th class="num">Cost</th>' +
+    '</tr></thead><tbody>';
+
+  for (const e of entries) {
+    html += '<tr>' +
+      '<td class="model-cell">' + e.api_key_name + '<small>' + e.model + '</small></td>' +
+      '<td class="model-cell"><small>' + e.model + '</small></td>' +
+      '<td class="num">' + e.output_tokens.toLocaleString('en-IN') + '</td>' +
+      '<td class="num">' + e.input_cache_hit_tokens_total.toLocaleString('en-IN') + '</td>' +
+      '<td class="num">' + e.input_cache_miss_tokens_total.toLocaleString('en-IN') + '</td>' +
+      '<td class="cost-cell">' + formatINR(e.bill_amount_in_inr) + '</td>' +
+      '</tr>';
+  }
+
+  html += '</tbody></table>';
+  detailBody.innerHTML = html;
+}
+
+// ── Navigation ──
+
+async function navigate(delta) {
+  showLoading();
+  state.month += delta;
+  if (state.month < 1) { state.month = 12; state.year--; }
+  if (state.month > 12) { state.month = 1; state.year++; }
+  selectedDate = null;
+  showEmptyState();
+  await fetchUsage(state.year, state.month);
+  const data = usageCache[state.year + '-' + state.month];
+  const daysInMonth = getDaysInMonth(state.year, state.month);
+  renderTrend(data, daysInMonth);
+  renderCalendar(data);
+  hideLoading();
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
+document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
+
+// ── Init ──
+
+// Auto-select the first day that has data
+function selectFirstDayWithData(data) {
+  if (!data) return;
+  const sorted = Object.keys(data).sort();
+  for (const dateStr of sorted) {
+    if (data[dateStr].length > 0) {
+      selectDay(dateStr);
+      return;
+    }
+  }
+}
+
+(async () => {
+  showLoading();
+  await fetchUsage(state.year, state.month);
+  const data = usageCache[state.year + '-' + state.month];
+  const daysInMonth = getDaysInMonth(state.year, state.month);
+  renderTrend(data, daysInMonth);
+  renderCalendar(data);
+  selectFirstDayWithData(data);
+  hideLoading();
+})();
+</script>
+</body>
+</html>
