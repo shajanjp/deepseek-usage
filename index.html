@@ -67,6 +67,25 @@
   .stat-item .sub { font-size: 12px; color: var(--text-secondary); }
   .stat-divider { width: 1px; background: var(--border); }
 
+  /* ── Currency select ── */
+  .currency-wrap {
+    margin-left: auto;
+  }
+  .currency-select {
+    appearance: none; -webkit-appearance: none;
+    font-size: 12px; font-weight: 500;
+    padding: 4px 28px 4px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+  }
+  .currency-select:hover { border-color: var(--accent); }
+  .currency-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+
   /* ── Trend chart ── */
   .trend-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -176,7 +195,6 @@
   .detail-table .num { text-align: right; font-variant-numeric: tabular-nums; }
   .detail-table .cost-cell { text-align: right; font-weight: 600; }
 
-
   .detail-empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100%; color: var(--text-tertiary); font-size: 13px; gap: 8px;
@@ -206,13 +224,14 @@
     .stats { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
     .stat-divider { display: none; }
     .header-left h1 { font-size: 17px; }
+    .currency-wrap { margin-left: 0; width: 100%; }
+    .currency-select { width: 100%; }
     .trend-card { padding: 12px 14px 4px; }
     .main-grid { flex-direction: column; }
     .main-grid .col-left { width: 100%; }
     .calendar-section { padding: 12px 14px; }
     .detail-section { padding: 12px 14px; min-height: 200px; }
     .detail-table { font-size: 12px; }
-
   }
 </style>
 </head>
@@ -235,12 +254,12 @@
     <div class="stats-title" id="statsTitle">June 2026</div>
     <div class="stat-item">
       <span class="label">Total</span>
-      <span class="value" id="statTotal">₹0.00</span>
+      <span class="value" id="statTotal">&#8203;</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
       <span class="label">Avg / Day</span>
-      <span class="value" id="statAvg">₹0.00</span>
+      <span class="value" id="statAvg">&#8203;</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
@@ -252,6 +271,9 @@
       <span class="label">Active Days</span>
       <span class="value" id="statActiveDays">0</span>
       <span class="sub" id="statSubDays"></span>
+    </div>
+    <div class="currency-wrap">
+      <select class="currency-select" id="currencySelect"></select>
     </div>
   </div>
 
@@ -310,7 +332,37 @@
 <script>
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-const state = { year: 2026, month: 6 };
+// ── Currency helpers ──
+
+const CURRENCY_SYMBOLS = {
+  USD: '$', EUR: '€', GBP: '£', JPY: '¥', INR: '₹',
+  CAD: 'CA$', AUD: 'A$', CHF: 'CHF', CNY: 'CN¥',
+  KRW: '₩', BRL: 'R$', MXN: 'MX$', SGD: 'S$',
+  HKD: 'HK$', NZD: 'NZ$', SEK: 'kr', NOK: 'kr',
+  DKK: 'kr', CZK: 'Kč', PLN: 'zł', HUF: 'Ft',
+  ISK: 'kr', IDR: 'Rp', MYR: 'RM', PHP: '₱',
+  THB: '฿', TRY: '₺', ZAR: 'R', RON: 'lei',
+  ILS: '₪',
+};
+
+function formatCurrency(n, code) {
+  const sym = CURRENCY_SYMBOLS[code] || code + ' ';
+  return sym + Number(n).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+// ── State ──
+
+const state = {
+  year: 2026,
+  month: 6,
+  currency: 'USD',
+  currencies: null,       // { code: 'Name', ... }
+  currencyList: [],       // sorted [code, name] pairs
+};
+
 const calGrid = document.getElementById('calGrid');
 const monthLabel = document.getElementById('monthLabel');
 const statTotal = document.getElementById('statTotal');
@@ -318,9 +370,9 @@ const statAvg = document.getElementById('statAvg');
 const statTopKey = document.getElementById('statTopKey');
 const statActiveDays = document.getElementById('statActiveDays');
 const statSubDays = document.getElementById('statSubDays');
-const detailSection = document.getElementById('detailSection');
 const detailTitle = document.getElementById('detailTitle');
 const detailBody = document.getElementById('detailBody');
+const currencySelect = document.getElementById('currencySelect');
 
 let usageCache = {};
 let trendChart = null;
@@ -329,10 +381,6 @@ let selectedDate = null;
 // ── Helpers ──
 
 function pad(n) { return String(n).padStart(2, '0'); }
-
-function formatINR(n) {
-  return '\u20b9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 function getDaysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
@@ -362,40 +410,73 @@ function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('active');
 }
 
+// ── Currency dropdown ──
+
+async function fetchCurrencies() {
+  try {
+    const res = await fetch('/api/currencies');
+    if (!res.ok) return;
+    const data = await res.json();
+    state.currencies = data;
+    state.currencyList = Object.entries(data).sort((a, b) => a[0].localeCompare(b[0]));
+    populateCurrencySelect();
+  } catch { /* ignore */ }
+}
+
+function populateCurrencySelect() {
+  currencySelect.innerHTML = '';
+  for (const [code, name] of state.currencyList) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = code + ' \u2014 ' + name;
+    if (code === state.currency) opt.selected = true;
+    currencySelect.appendChild(opt);
+  }
+}
+
+currencySelect.addEventListener('change', () => {
+  const newCurrency = currencySelect.value;
+  if (newCurrency === state.currency) return;
+  state.currency = newCurrency;
+  usageCache = {};            // Clear cache so data re-fetches with new currency
+  selectedDate = null;
+  loadMonth();
+});
+
 // ── Fetch ──
 
-async function fetchUsage(year, month) {
-  const key = year + '-' + month;
+async function fetchUsage(year, month, currency) {
+  const key = year + '-' + month + '-' + currency;
   if (usageCache[key]) return usageCache[key];
   try {
-    const res = await fetch('/api/usage?month=' + month + '&year=' + year);
+    const res = await fetch('/api/usage?month=' + month + '&year=' + year + '&currency=' + currency);
     if (!res.ok) return null;
-    const data = await res.json();
-    usageCache[key] = data;
-    return data;
+    const json = await res.json();
+    // json = { data: { ... }, currency: 'USD' }
+    usageCache[key] = json;
+    return json;
   } catch { return null; }
 }
 
 // ── Trend chart ──
 
-function renderTrend(data, daysInMonth) {
+function renderTrend(apiData, daysInMonth) {
   const canvas = document.getElementById('trendChart');
   if (trendChart) trendChart.destroy();
 
+  const data = apiData ? apiData.data : null;
+  const currency = apiData ? apiData.currency : state.currency;
   const labels = [];
   const values = [];
   const dayTotals = {};
 
-  // Build day lookup
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = state.year + '-' + pad(state.month) + '-' + pad(d);
-    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount_in_inr, 0) : 0;
+    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount, 0) : 0;
     labels.push(d);
     values.push(total);
     dayTotals[dateStr] = total;
   }
-
-  const maxVal = Math.max(...values, 1);
 
   trendChart = new Chart(canvas, {
     type: 'bar',
@@ -414,20 +495,20 @@ function renderTrend(data, daysInMonth) {
       maintainAspectRatio: false,
       animation: false,
       plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: function(items) {
-                  const day = items[0].dataIndex + 1;
-                  const d = new Date(state.year, state.month - 1, day);
-                  return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-                },
-                label: function(item) {
-                  return 'Cost: ' + formatINR(item.raw);
-                },
-              },
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              const day = items[0].dataIndex + 1;
+              const d = new Date(state.year, state.month - 1, day);
+              return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+            },
+            label: function(item) {
+              return 'Cost: ' + formatCurrency(item.raw, currency);
             },
           },
+        },
+      },
       scales: {
         x: {
           display: true,
@@ -455,24 +536,26 @@ function renderTrend(data, daysInMonth) {
 
 // ── Calendar heatmap ──
 
-function renderCalendar(data) {
+function renderCalendar(apiData) {
   const { year, month } = state;
+  const data = apiData ? apiData.data : null;
+  const currency = apiData ? apiData.currency : state.currency;
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   monthLabel.textContent = MONTHS[month - 1] + ' ' + year;
   document.getElementById('statsTitle').textContent = year + ' ' + MONTHS[month - 1];
 
-  // Compute per-day totals for heatmap intensity
+  // Per-day totals for heatmap intensity
   const dayTotals = [];
   let maxCost = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = year + '-' + pad(month) + '-' + pad(d);
-    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount_in_inr, 0) : 0;
+    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount, 0) : 0;
     dayTotals.push(total);
     if (total > maxCost) maxCost = total;
   }
 
-  // Compute stats
+  // Stats
   const totalCost = dayTotals.reduce((s, v) => s + v, 0);
   const activeDays = dayTotals.filter(v => v > 0).length;
   const avgCost = activeDays > 0 ? totalCost / activeDays : 0;
@@ -480,16 +563,16 @@ function renderCalendar(data) {
   // Top key by total cost
   const keyTotals = {};
   if (data) {
-    for (const [dateStr, entries] of Object.entries(data)) {
+    for (const entries of Object.values(data)) {
       for (const e of entries) {
-        keyTotals[e.api_key_name] = (keyTotals[e.api_key_name] || 0) + e.bill_amount_in_inr;
+        keyTotals[e.api_key_name] = (keyTotals[e.api_key_name] || 0) + e.bill_amount;
       }
     }
   }
   const topKey = Object.entries(keyTotals).sort((a, b) => b[1] - a[1])[0];
 
-  statTotal.textContent = formatINR(totalCost);
-  statAvg.textContent = formatINR(avgCost);
+  statTotal.textContent = formatCurrency(totalCost, currency);
+  statAvg.textContent = formatCurrency(avgCost, currency);
   statTopKey.textContent = topKey ? topKey[0] : '\u2014';
   statActiveDays.textContent = activeDays;
   statSubDays.textContent = 'of ' + daysInMonth + ' days';
@@ -499,7 +582,7 @@ function renderCalendar(data) {
   calGrid.innerHTML = '';
 
   for (let i = 0; i < totalCells; i++) {
-    let dayNum = i - firstDay + 1;
+    const dayNum = i - firstDay + 1;
     const cell = document.createElement('div');
     cell.className = 'cal-cell';
 
@@ -536,7 +619,7 @@ function renderCalendar(data) {
     if (cost > 0) {
       const label = document.createElement('span');
       label.className = 'day-cost-label';
-      label.textContent = formatINR(cost);
+      label.textContent = formatCurrency(cost, currency);
       cell.appendChild(label);
     }
 
@@ -544,7 +627,7 @@ function renderCalendar(data) {
     calGrid.appendChild(cell);
   }
 
-  // If selectedDate is still set but no longer in this month, reset
+  // Reset selectedDate if it's no longer in this month
   if (selectedDate && !selectedDate.startsWith(year + '-' + pad(month))) {
     selectedDate = null;
     showEmptyState();
@@ -565,15 +648,19 @@ function showEmptyState() {
 
 function selectDay(dateStr) {
   selectedDate = dateStr;
-  const data = usageCache[state.year + '-' + state.month];
+  const cacheKey = state.year + '-' + state.month + '-' + state.currency;
+  const apiData = usageCache[cacheKey];
+  const data = apiData ? apiData.data : null;
+  const currency = apiData ? apiData.currency : state.currency;
+
   if (!data || !data[dateStr]) { showEmptyState(); return; }
 
   const entries = data[dateStr];
-  const dayTotal = entries.reduce((s, e) => s + e.bill_amount_in_inr, 0);
+  const dayTotal = entries.reduce((s, e) => s + e.bill_amount, 0);
   const date = new Date(dateStr + 'T00:00:00');
 
   detailTitle.innerHTML = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() +
-    ' <small>' + formatINR(dayTotal) + '</small>';
+    ' <small>' + formatCurrency(dayTotal, currency) + '</small>';
 
   // Highlight selected cell
   document.querySelectorAll('.cal-cell.selected').forEach(el => el.classList.remove('selected'));
@@ -596,7 +683,7 @@ function selectDay(dateStr) {
       '<td class="num">' + e.output_tokens.toLocaleString('en-IN') + '</td>' +
       '<td class="num">' + e.input_cache_hit_tokens_total.toLocaleString('en-IN') + '</td>' +
       '<td class="num">' + e.input_cache_miss_tokens_total.toLocaleString('en-IN') + '</td>' +
-      '<td class="cost-cell">' + formatINR(e.bill_amount_in_inr) + '</td>' +
+      '<td class="cost-cell">' + formatCurrency(e.bill_amount, currency) + '</td>' +
       '</tr>';
   }
 
@@ -613,25 +700,30 @@ async function navigate(delta) {
   if (state.month > 12) { state.month = 1; state.year++; }
   selectedDate = null;
   showEmptyState();
-  await fetchUsage(state.year, state.month);
-  const data = usageCache[state.year + '-' + state.month];
-  const daysInMonth = getDaysInMonth(state.year, state.month);
-  renderTrend(data, daysInMonth);
-  renderCalendar(data);
+  await loadMonth();
   hideLoading();
 }
 
 document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
 document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
 
+// ── Load month data ──
+
+async function loadMonth() {
+  const apiData = await fetchUsage(state.year, state.month, state.currency);
+  const daysInMonth = getDaysInMonth(state.year, state.month);
+  renderTrend(apiData, daysInMonth);
+  renderCalendar(apiData);
+  selectFirstDayWithData(apiData);
+}
+
 // ── Init ──
 
-// Auto-select the first day that has data
-function selectFirstDayWithData(data) {
-  if (!data) return;
-  const sorted = Object.keys(data).sort();
+function selectFirstDayWithData(apiData) {
+  if (!apiData || !apiData.data) return;
+  const sorted = Object.keys(apiData.data).sort();
   for (const dateStr of sorted) {
-    if (data[dateStr].length > 0) {
+    if (apiData.data[dateStr].length > 0) {
       selectDay(dateStr);
       return;
     }
@@ -640,12 +732,8 @@ function selectFirstDayWithData(data) {
 
 (async () => {
   showLoading();
-  await fetchUsage(state.year, state.month);
-  const data = usageCache[state.year + '-' + state.month];
-  const daysInMonth = getDaysInMonth(state.year, state.month);
-  renderTrend(data, daysInMonth);
-  renderCalendar(data);
-  selectFirstDayWithData(data);
+  await fetchCurrencies();
+  await loadMonth();
   hideLoading();
 })();
 </script>
