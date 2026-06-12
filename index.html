@@ -187,7 +187,9 @@
     transition: all var(--transition); position: relative;
     border: 1.5px solid transparent; color: var(--text-secondary);
   }
-  .cal-cell:hover { transform: scale(1.05); z-index: 1; border-color: var(--accent); box-shadow: 0 2px 8px rgba(99,102,241,0.2); }
+  .cal-cell { position: relative; }
+  .cal-cell:hover { transform: scale(1.05); z-index: 2; border-color: var(--accent); box-shadow: 0 2px 8px rgba(99,102,241,0.2); }
+  .cal-cell:hover .cal-tooltip { opacity: 1; visibility: visible; }
   .cal-cell.empty { background: transparent !important; cursor: default; }
   .cal-cell.empty:hover { transform: none; border-color: transparent; box-shadow: none; }
   .cal-cell.today { border-color: var(--accent) !important; font-weight: 700; }
@@ -205,6 +207,20 @@
     opacity: 0.8; line-height: 1;
   }
   .cal-cell.l4 .day-num, .cal-cell.l5 .day-num { opacity: 0.9; }
+  /* Calendar cell tooltip */
+  .cal-tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0f172a; color: #f1f5f9;
+    font-size: 10px; font-weight: 600; white-space: nowrap;
+    padding: 3px 8px; border-radius: 5px;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.12s, visibility 0.12s;
+    pointer-events: none; z-index: 5;
+  }
+  .cal-tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 4px solid transparent; border-top-color: #0f172a;
+  }
   .cal-cell .day-cost-label { display: none; }
   .cal-cell.empty .day-num { display: none; }
 
@@ -733,7 +749,8 @@ function renderCalendar(apiData) {
   const currency = apiData ? apiData.currency : state.currency;
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
-  monthLabel.textContent = MONTHS[month - 1] + ' ' + year;
+  var monthHasData = data && Object.keys(data).some(function(d) { return d.startsWith(year + '-' + pad(month)); });
+  monthLabel.textContent = MONTHS[month - 1] + ' ' + year + (monthHasData ? '' : ' \u2014 No data');
 
   // Per-day totals for heatmap intensity
   const dayTotals = [];
@@ -802,12 +819,12 @@ function renderCalendar(apiData) {
     num.textContent = dayNum;
     cell.appendChild(num);
 
-    // Cost label (center)
+    // Tooltip with cost
     if (cost > 0) {
-      const label = document.createElement('span');
-      label.className = 'day-cost-label';
-      label.textContent = formatCurrency(cost, currency);
-      cell.appendChild(label);
+      const tip = document.createElement('div');
+      tip.className = 'cal-tooltip';
+      tip.textContent = formatCurrency(cost, currency);
+      cell.appendChild(tip);
     }
 
     cell.addEventListener('click', () => selectDay(dateStr));
@@ -866,11 +883,20 @@ function selectDay(dateStr) {
     return;
   }
 
-  let html = '<table class="detail-table"><thead><tr>' +
-    '<th>API Key</th><th class="num">Output</th><th class="num">Cache hit</th><th class="num">Cache miss</th><th class="num">Cost</th>' +
+  function shortModel(m) {
+    return m.replace(/^deepseek-/, '').replace(/-/g, ' ');
+  }
+  function cacheRate(hit, miss) {
+    var total = hit + miss;
+    if (total === 0) return '-';
+    return Math.round(hit / total * 100) + '%';
+  }
+
+  var html = '<table class="detail-table"><thead><tr>' +
+    '<th>API Key</th><th class="num">Output</th><th class="num">Cache hit</th><th class="num">Cache miss</th><th class="num">Hit rate</th><th class="num">Cost</th>' +
     '</tr></thead><tbody>';
 
-  let totalOutput = 0, totalHit = 0, totalMiss = 0, totalCost = 0;
+  var totalOutput = 0, totalHit = 0, totalMiss = 0, totalCost = 0;
 
   for (const e of entries) {
     totalOutput += e.output_tokens;
@@ -879,10 +905,11 @@ function selectDay(dateStr) {
     totalCost += e.bill_amount;
 
     html += '<tr>' +
-      '<td><span class="model-cell">' + e.api_key_name + '<small>' + e.model + '</small></span></td>' +
+      '<td><span class="model-cell">' + e.api_key_name + '<small>' + shortModel(e.model) + '</small></span></td>' +
       '<td class="num">' + formatNum(e.output_tokens) + '</td>' +
       '<td class="num">' + formatNum(e.input_cache_hit_tokens_total) + '</td>' +
       '<td class="num">' + formatNum(e.input_cache_miss_tokens_total) + '</td>' +
+      '<td class="num" style="font-weight:600;color:var(--green);">' + cacheRate(e.input_cache_hit_tokens_total, e.input_cache_miss_tokens_total) + '</td>' +
       '<td class="cost-cell">' + formatCurrency(e.bill_amount, currency) + '</td>' +
       '</tr>';
   }
@@ -893,6 +920,7 @@ function selectDay(dateStr) {
     '<td class="num">' + formatNum(totalOutput) + '</td>' +
     '<td class="num">' + formatNum(totalHit) + '</td>' +
     '<td class="num">' + formatNum(totalMiss) + '</td>' +
+    '<td class="num" style="font-weight:600;color:var(--green);">' + cacheRate(totalHit, totalMiss) + '</td>' +
     '<td class="cost-cell">' + formatCurrency(totalCost, currency) + '</td>' +
     '</tr>';
 
