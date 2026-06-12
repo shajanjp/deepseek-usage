@@ -4,9 +4,10 @@
  * DeepSeek Usage Dashboard — server entry point.
  *
  * Endpoints:
- *   GET  /                          — serve the HTML dashboard
- *   GET  /api/usage?month=&year=&currency= — aggregated usage JSON
- *   GET  /api/currencies            — list of supported currency codes/names
+ *   GET  /                               — serve the HTML dashboard
+ *   GET  /api/usage?month=&year=&currency= — aggregated usage JSON + token summary
+ *   GET  /api/currencies                 — list of supported currency codes/names
+ *   GET  /api/balance                    — DeepSeek account balance
  */
 
 import { serve } from '@hono/node-server';
@@ -16,8 +17,10 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-import { getUsageRows, aggregateByDay } from './lib/usage.js';
+import { getUsageRows } from './lib/deepseek.js';
+import { aggregateByDay, computeTokenSummary } from './lib/usage.js';
 import { getExchangeRate, getSupportedCurrencies } from './lib/exchange.js';
+import { fetchUserSummary } from './lib/deepseek.js';
 
 // -- Paths ------------------------------------------------------------------
 
@@ -48,6 +51,28 @@ app.get('/', (c) => {
 app.get('/api/currencies', async (c) => {
   const currencies = await getSupportedCurrencies();
   return c.json(currencies);
+});
+
+// Exchange rate from USD to a target currency
+app.get('/api/rate', async (c) => {
+  const currency = (c.req.query('currency') || 'USD').toUpperCase();
+  try {
+    const rate = await getExchangeRate(currency);
+    return c.json({ currency, rate });
+  } catch (err) {
+    return c.json({ currency, rate: null }, 502);
+  }
+});
+
+// DeepSeek account summary (balance, monthly usage, wallet info)
+app.get('/api/summary', async (c) => {
+  try {
+    const data = await fetchUserSummary(BEARER_TOKEN);
+    return c.json(data);
+  } catch (err) {
+    console.error(`[error] Failed to fetch user summary: ${err.message}`);
+    return c.json({ error: 'Failed to fetch summary' }, 502);
+  }
 });
 
 // API: aggregated usage for a given month
@@ -88,7 +113,8 @@ app.get('/api/usage', async (c) => {
 
   // --- Aggregate and return ---
   const data = aggregateByDay(rows, rate, currency);
-  return c.json({ data, currency });
+  const summary = computeTokenSummary(rows);
+  return c.json({ data, currency, summary });
 });
 
 // Global error handler
