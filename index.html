@@ -1019,15 +1019,17 @@
                     gap: 12px;
                 }
                 .header {
-                    flex-wrap: wrap;
+                    flex-direction: column;
+                    align-items: stretch;
                     gap: 8px;
                 }
                 .header-left {
-                    order: 1;
+                    align-self: flex-start;
                 }
-                .header-nav {
-                    order: 2;
-                    margin-left: auto;
+                .header-right {
+                    width: auto;
+                    justify-content: flex-start;
+                    gap: 6px;
                 }
                 .header-center {
                     order: 3;
@@ -1105,7 +1107,9 @@
                     height: 22px;
                 }
                 .header-right {
-                    gap: 2px;
+                    width: auto;
+                    justify-content: flex-start;
+                    gap: 6px;
                 }
                 .header-controls {
                     gap: 2px;
