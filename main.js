@@ -65,7 +65,7 @@ app.get('/api/usage/export', async (c) => {
 
   try {
     const csvText = await fetchUsageExportRaw(year, month, DATA_DIR, BEARER_TOKEN);
-    return c.newResponse(csvText, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return c.text(csvText);
   } catch (err) {
     console.error(`[error] Failed to fetch usage export: ${err.message}`);
     return c.json({ error: `Failed to fetch usage data: ${err.message}` }, 502);

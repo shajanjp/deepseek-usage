@@ -105,12 +105,11 @@
 
   /* ── Header ── */
   .header {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; gap: 16px;
   }
-  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-left { flex-shrink: 0; display: flex; align-items: center; gap: 12px; }
   .header-center {
-    display: flex; align-items: center; gap: 8px;
-    margin-left: auto;
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
   }
   .header-left h1 {
     font-size: 20px; font-weight: 650; letter-spacing: -0.3px;
@@ -120,7 +119,7 @@
   }
 
   .header-nav {
-    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0; display: flex; align-items: center; gap: 4px;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 3px; box-shadow: var(--shadow);
   }
@@ -134,10 +133,26 @@
     opacity: 0.3; cursor: default;
   }
   .header-nav button:disabled:hover { background: none; color: var(--text-secondary); }
-  .header-nav .month-label {
-    font-size: 14px; font-weight: 600; padding: 0 14px; min-width: 146px; text-align: center;
-    color: var(--text); user-select: none;
+  .month-picker {
+    display: flex; align-items: center; gap: 6px;
+    min-width: 150px; justify-content: center;
   }
+  .month-select {
+    font-size: 14px; font-weight: 600;
+    color: var(--text); background: none;
+    border: none; cursor: pointer; outline: none;
+    padding: 0; font-family: inherit;
+    text-align: center;
+  }
+  .month-select:hover { color: var(--accent); }
+  .year-select {
+    font-size: 14px; font-weight: 600; width: 58px;
+    color: var(--text); background: none;
+    border: none; cursor: pointer; outline: none;
+    padding: 0; font-family: inherit;
+    text-align: center;
+  }
+  .year-select:hover { color: var(--accent); }
 
   /* ── Stats bar ── */
   .stats {
@@ -181,42 +196,53 @@
   .balance-pill.hidden { display: none; }
 
   /* ── Re-upload pill ── */
-  .reupload-pill {
+  /* ── Header controls ── */
+  .header-controls {
     display: flex; align-items: center; gap: 6px;
-    height: 32px; padding: 0 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 4px 3px 6px;
+    box-shadow: var(--shadow);
+  }
+  .header-controls .divider {
+    width: 1px; height: 20px; background: var(--border); flex-shrink: 0;
+  }
+
+  .reupload-pill {
+    display: flex; align-items: center; gap: 4px;
+    height: 26px; padding: 0 10px;
     background: var(--accent-subtle);
-    border-radius: 20px; cursor: pointer;
+    border-radius: 13px; cursor: pointer;
     font-size: 11px; font-weight: 500; color: var(--accent);
-    border: none; font-family: inherit;
+    border: none; font-family: inherit; white-space: nowrap;
     transition: background var(--transition);
   }
   .reupload-pill:hover { background: var(--accent-light); }
 
   .theme-toggle {
     display: flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border: none; background: none; border-radius: 50%;
-    cursor: pointer; font-size: 16px; color: var(--text-secondary); font-family: inherit;
-    transition: all var(--transition); margin-left: 4px;
+    width: 26px; height: 26px; border: none; background: none; border-radius: 50%;
+    cursor: pointer; font-size: 15px; color: var(--text-secondary); font-family: inherit;
+    line-height: 1; transition: all var(--transition);
   }
   .theme-toggle:hover { background: var(--accent-subtle); color: var(--accent); }
 
   /* ── Currency select ── */
-  .currency-wrap { margin-left: 8px; }
+  .currency-wrap { flex-shrink: 0; }
   .currency-select {
     appearance: none; -webkit-appearance: none;
     font-size: 11px; font-weight: 500;
-    height: 32px; padding: 0 28px 0 12px;
-    border: 1px solid var(--border); border-radius: 20px;
-    background: var(--surface);
+    height: 26px; padding: 0 24px 0 8px;
+    border: none; border-radius: 13px;
+    background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 7px center;
+    background-position: right 4px center;
   }
-  .currency-select:hover { border-color: var(--accent); color: var(--text); }
-  .currency-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .currency-select:hover { color: var(--accent); }
+  .currency-select:focus { outline: none; }
 
   /* ── Trend chart ── */
   .trend-card {
@@ -232,6 +258,12 @@
     font-size: 13px; font-weight: 600; color: var(--text-secondary);
     display: flex; align-items: center; gap: 6px;
   }
+  .no-data-badge {
+    font-size: 10px; font-weight: 500; color: var(--text-tertiary);
+    background: var(--accent-subtle); padding: 1px 7px; border-radius: 8px;
+    display: none;
+  }
+  .no-data-badge.visible { display: inline; }
   .trend-chart-wrap { position: relative; height: 150px; }
   #trendChart { display: block; width: 100%; height: 100%; }
 
@@ -496,7 +528,9 @@
   @media (max-width: 768px) {
     .app { padding: 16px; gap: 12px; }
     .header { flex-wrap: wrap; gap: 8px; }
-    .header-center { order: 3; width: 100%; justify-content: center; margin-left: 0; }
+    .header-left { order: 1; }
+    .header-nav { order: 2; margin-left: auto; }
+    .header-center { order: 3; width: 100%; justify-content: center; }
     .header-left h1 { font-size: 17px; }
     .stats { flex-wrap: wrap; padding: 10px 14px; gap: 6px 0; }
     .stat-divider { display: none; }
@@ -517,8 +551,14 @@
     .stat-item .label { font-size: 9px; }
     .balance-pill { font-size: 10px; padding: 3px 8px 3px 6px; }
     .balance-pill .value { font-size: 11px; }
-    .currency-select { font-size: 10px; height: 28px; padding: 0 22px 0 8px; }
-    .header-nav .month-label { min-width: 110px; font-size: 12px; }
+    .header-center { gap: 4px; }
+    .header-controls { padding: 2px 3px 2px 5px; gap: 4px; }
+    .reupload-pill { height: 24px; padding: 0 8px; font-size: 10px; }
+    .theme-toggle { width: 24px; height: 24px; font-size: 13px; line-height: 1; }
+    .currency-select { height: 24px; font-size: 10px; padding: 0 20px 0 6px; }
+    .month-picker { min-width: 120px; gap: 4px; }
+    .month-select { font-size: 12px; }
+    .year-select { font-size: 12px; width: 50px; }
     .trend-chart-wrap { height: 100px; }
     .drop-box { padding: 32px 24px; }
     .drop-title { font-size: 15px; }
@@ -569,15 +609,22 @@
       <h1>DeepSeek Usage</h1>
     </div>
     <div class="header-center">
-      <button class="reupload-pill" id="reuploadBtn">&#128194;&#8199;Load file</button>
-      <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">&#9789;</button>
-      <div class="currency-wrap">
-        <select class="currency-select" id="currencySelect"></select>
+      <div class="header-controls">
+        <button class="reupload-pill" id="reuploadBtn">&#128194;&#8199;Load file</button>
+        <div class="divider"></div>
+        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">&#9789;</button>
+        <div class="divider"></div>
+        <div class="currency-wrap">
+          <select class="currency-select" id="currencySelect"></select>
+        </div>
       </div>
     </div>
     <div class="header-nav">
       <button id="prevBtn">&larr;</button>
-      <span class="month-label" id="monthLabel">June 2026</span>
+      <div class="month-picker">
+        <select id="monthSelect" class="month-select" aria-label="Month"></select>
+        <select id="yearInput" class="year-select" aria-label="Year"></select>
+      </div>
       <button id="nextBtn">&rarr;</button>
     </div>
   </div>
@@ -618,7 +665,7 @@
   <!-- Trend -->
   <div class="trend-card">
     <div class="trend-header">
-      <h3>Daily cost</h3>
+      <h3>Daily cost <span id="trendNoData" class="no-data-badge">No data</span></h3>
     </div>
     <div class="trend-chart-wrap"><canvas id="trendChart"></canvas></div>
   </div>
@@ -738,7 +785,7 @@ function aggregateByDay(rows) {
       input_cache_hit_tokens_total: g.input_cache_hit_tokens_total,
       input_cache_miss_tokens_total: g.input_cache_miss_tokens_total,
       output_tokens: g.output_tokens,
-      bill_amount: Math.round(g.bill_amount * 100) / 100,
+      bill_amount: Math.round(g.bill_amount * 1e6) / 1e6,
     });
   }
   return result;
@@ -772,12 +819,19 @@ let rateCache = { USD: 1 };
 
 async function fetchRates() {
   try {
-    const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
+    const controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+    const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD', { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!res.ok) throw new Error('Frankfurter API returned HTTP ' + res.status);
     const body = await res.json();
     rateCache = { USD: 1, ...body.rates };
   } catch (e) {
-    console.warn('Failed to fetch exchange rates:', e.message);
+    if (e.name === 'AbortError') {
+      console.warn('Exchange rate fetch timed out, using default rates');
+    } else {
+      console.warn('Failed to fetch exchange rates:', e.message);
+    }
   }
 }
 
@@ -827,7 +881,8 @@ const state = {
 // ── DOM refs ──
 
 const calGrid = document.getElementById('calGrid');
-const monthLabel = document.getElementById('monthLabel');
+const monthSelect = document.getElementById('monthSelect');
+const yearInput = document.getElementById('yearInput');
 const statTotal = document.getElementById('statTotal');
 const statAvg = document.getElementById('statAvg');
 const statActiveDays = document.getElementById('statActiveDays');
@@ -969,7 +1024,9 @@ function reloadFromCurrentData() {
   const { year, month, data, summary } = state;
   const daysInMonth = getDaysInMonth(year, month);
   const monthHasData = data && Object.keys(data).some(function(d) { return d.startsWith(year + '-' + pad(month)); });
-  monthLabel.textContent = MONTHS[month - 1] + ' ' + year + (monthHasData ? '' : ' \u2014 No data');
+  monthSelect.value = String(month);
+  yearInput.value = String(year);
+  document.getElementById('trendNoData').classList.toggle('visible', !monthHasData);
 
   // Per-day totals
   const dayTotals = [];
@@ -1005,17 +1062,26 @@ function reloadFromCurrentData() {
     statBalance.textContent = sym + ' ' + Number(converted).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  renderTrend(dayTotals);
-  renderCalendar(dayTotals, daysInMonth, maxCost);
-  selectFirstDayWithData();
+  try {
+    renderTrend(dayTotals);
+  } catch (e) { console.error('[reload] renderTrend error:', e); }
+  try {
+    renderCalendar(dayTotals, daysInMonth, maxCost);
+  } catch (e) { console.error('[reload] renderCalendar error:', e); }
+  try {
+    selectFirstDayWithData();
+  } catch (e) { console.error('[reload] selectFirstDayWithData error:', e); }
 }
 
 function renderTrend(dayTotals) {
+  console.log('[renderTrend] called with', dayTotals.length, 'days, sum:', dayTotals.reduce(function(a,b){return a+b}, 0));
   const canvas = document.getElementById('trendChart');
-  if (trendChart) trendChart.destroy();
+  if (!canvas) { console.error('[renderTrend] canvas not found'); return; }
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const ctx = canvas.getContext('2d');
+  if (!ctx) { console.error('[renderTrend] could not get 2d context'); return; }
   const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height || 150);
   gradient.addColorStop(0, '#818cf8');
   gradient.addColorStop(1, '#6366f1');
@@ -1226,9 +1292,13 @@ function selectFirstDayWithData() {
 // ── API mode ──
 
 async function fetchExportCSV(year, month) {
+  console.log('[fetchExportCSV] fetching', year, month);
   const res = await fetch('/api/usage/export?month=' + month + '&year=' + year);
+  console.log('[fetchExportCSV] response status', res.status);
   if (!res.ok) throw new Error('Export API returned HTTP ' + res.status);
-  return await res.text();
+  const text = await res.text();
+  console.log('[fetchExportCSV] received', text.length, 'bytes, first 50:', text.slice(0, 50));
+  return text;
 }
 
 async function fetchSummary() {
@@ -1237,11 +1307,44 @@ async function fetchSummary() {
   return await res.json();
 }
 
+function resetDashboard() {
+  state.allRows = null;
+  state.data = null;
+  state.summary = null;
+  selectedDate = null;
+
+  statTotal.textContent = '\u2014';
+  statAvg.textContent = '\u2014';
+  statActiveDays.textContent = '0';
+  statSubDays.textContent = '';
+  statTokenIn.textContent = '\u2014';
+  statTokenOut.textContent = '\u2014';
+
+  const daysInMonth = getDaysInMonth(state.year, state.month);
+  renderTrend(new Array(daysInMonth).fill(0));
+  renderCalendar(new Array(daysInMonth).fill(0), daysInMonth, 0);
+  showEmptyState();
+}
+
 async function loadMonthFromAPI(year, month) {
+  console.log('[loadMonthFromAPI] start', year, month);
   showLoading();
   try {
     const csvText = await fetchExportCSV(year, month);
     const rows = parseCSV(csvText);
+    console.log('[loadMonthFromAPI] parsed', rows.length, 'rows');
+    if (rows.length > 0) {
+      console.log('[loadMonthFromAPI] first 3 rows:', rows.slice(0, 3).map(function(r) { return { type: r.type, price: r.price, amount: r.amount, date: r.utc_date, model: r.model }; }));
+      var agg = aggregateByDay(rows);
+      var dateKeys = Object.keys(agg);
+      console.log('[loadMonthFromAPI] dates with data:', dateKeys.length);
+      if (dateKeys.length > 0) {
+        console.log('[loadMonthFromAPI] first date entries:', JSON.stringify(agg[dateKeys[0]]));
+      }
+    } else {
+      var agg = null;
+      console.log('[loadMonthFromAPI] dates with data: 0');
+    }
     state.allRows = rows;
     state.data = aggregateByDay(rows);
     state.summary = computeTokenSummary(rows);
@@ -1249,13 +1352,21 @@ async function loadMonthFromAPI(year, month) {
     state.month = month;
     selectedDate = null;
 
-    // Balance is fetched once on init, not per navigation
+    console.log('[loadMonthFromAPI] calling reloadFromCurrentData');
     reloadFromCurrentData();
+    console.log('[loadMonthFromAPI] done');
   } catch (e) {
-    console.warn('Failed to load month from API:', e.message);
-    monthLabel.textContent = MONTHS[month - 1] + ' ' + year + ' \u2014 No data';
+    console.warn('[loadMonthFromAPI] error:', e.message);
+    console.warn('[loadMonthFromAPI] stack:', e.stack);
+    state.year = year;
+    state.month = month;
+    monthSelect.value = String(month);
+    yearInput.value = String(year);
+    document.getElementById('trendNoData').classList.add('visible');
+    resetDashboard();
   }
   hideLoading();
+  console.log('[loadMonthFromAPI] end');
 }
 
 async function navigate(delta) {
@@ -1271,6 +1382,45 @@ async function navigate(delta) {
 prevBtn.addEventListener('click', function() { navigate(-1); });
 nextBtn.addEventListener('click', function() { navigate(1); });
 
+// ── Month/year picker ──
+
+(function populatePickers() {
+  var curYear = new Date().getFullYear();
+  for (var i = curYear - 4; i <= curYear; i++) {
+    var opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = String(i);
+    yearInput.appendChild(opt);
+  }
+  yearInput.value = String(state.year);
+
+  for (var j = 1; j <= 12; j++) {
+    var opt2 = document.createElement('option');
+    opt2.value = String(j);
+    opt2.textContent = MONTHS[j - 1].slice(0, 3);
+    monthSelect.appendChild(opt2);
+  }
+  monthSelect.value = String(state.month);
+})();
+
+function goToMonth(month, year) {
+  if (!state.isApiMode) return;
+  if (month < 1) month = 1;
+  if (month > 12) month = 12;
+  state.month = month;
+  state.year = year;
+  selectedDate = null;
+  showEmptyState();
+  loadMonthFromAPI(year, month);
+}
+
+monthSelect.addEventListener('change', function() {
+  goToMonth(parseInt(monthSelect.value, 10), parseInt(yearInput.value, 10));
+});
+yearInput.addEventListener('change', function() {
+  goToMonth(parseInt(monthSelect.value, 10), parseInt(yearInput.value, 10));
+});
+
 // ── Init: detect API and bootstrap ──
 
 async function init() {
@@ -1281,6 +1431,8 @@ async function init() {
     // Try API mode first
     const csvText = await fetchExportCSV(state.year, state.month);
     const rows = parseCSV(csvText);
+    console.log('[init] Parsed ' + rows.length + ' rows from export CSV');
+    if (rows.length === 0) throw new Error('CSV contains no data rows');
     state.isApiMode = true;
     state.isFileMode = false;
     state.allRows = rows;
@@ -1302,10 +1454,12 @@ async function init() {
     }
     updateBalancePill(state.balance !== null);
 
+    console.log('[init] calling reloadFromCurrentData');
     reloadFromCurrentData();
+    console.log('[init] done');
   } catch (e) {
     // API not available - show drop zone instead
-    console.log('API not available, showing file drop zone:', e.message);
+    console.warn('[init] error, showing drop zone:', e.message);
     state.isApiMode = false;
     state.isFileMode = false;
     enableNavButtons(false);
@@ -1313,6 +1467,7 @@ async function init() {
     dropZone.classList.remove('hidden');
   }
   hideLoading();
+  console.log('[init] hideLoading called');
 }
 
 // ── Dark mode ──
@@ -1351,7 +1506,10 @@ document.getElementById('themeToggle').addEventListener('click', function() {
 
 // ── Boot ──
 
-init();
+init().catch(function(e) {
+  console.error('[boot] init rejected:', e);
+  hideLoading();
+});
 </script>
 </body>
 </html>
