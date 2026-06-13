@@ -2,7 +2,7 @@
 
 A self-hosted dashboard for visualising your DeepSeek AI API usage — daily costs, token consumption, cache hit rates, and per-key breakdowns. Data is fetched directly from the [DeepSeek Platform API](https://platform.deepseek.com) and rendered client-side.
 
-![Dashboard screenshot](assets/img/og-image.jpg)
+![Dashboard screenshot](screenshots/dashboard-desktop.png)
 
 ## Features
 
@@ -80,6 +80,12 @@ All endpoints are thin proxies to the DeepSeek REST API. No formatting or aggreg
 |---|---|---|---|
 | `DEEPSEEK_BEARER_TOKEN` | Yes | — | API token from [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
 | `PORT` | No | `3000` | Port for the web server |
+
+## Screenshots
+
+| Desktop | Mobile |
+|---------|--------|
+| ![Desktop dashboard](screenshots/dashboard-desktop.png) | ![Mobile dashboard](screenshots/dashboard-mobile.png) |
 
 ## Usage
 
