@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DeepSeek Usage</title>
+<title>DeepSeek Usage Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,6 +30,72 @@
   html, body {
     height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Drop zone ── */
+  .drop-zone {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; padding: 40px;
+    background: var(--bg);
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  .drop-zone.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .drop-zone.dragover .drop-box {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    transform: scale(1.02);
+  }
+
+  .drop-box {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    padding: 48px 40px; border-radius: var(--radius);
+    border: 2px dashed var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all var(--transition);
+    max-width: 480px; width: 100%;
+    box-shadow: var(--shadow);
+  }
+  .drop-box:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .drop-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--accent-subtle);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .drop-title { font-size: 18px; font-weight: 650; color: var(--text); }
+  .drop-instructions {
+    display: flex; flex-direction: column; gap: 10px;
+    text-align: left; width: 100%; max-width: 360px;
+  }
+  .drop-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: var(--text-secondary); line-height: 1.4;
+  }
+  .drop-step-num {
+    flex-shrink: 0;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-subtle);
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .drop-step-text strong,
+  .drop-step-text code {
+    color: var(--text); font-weight: 600;
+  }
+  .drop-step-text code {
+    font-size: 12px; background: var(--accent-subtle);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .drop-hint {
+    font-size: 13px; color: var(--text-tertiary);
+    text-align: center; line-height: 1.5; margin-top: 4px;
   }
 
   .app {
@@ -64,6 +130,10 @@
     align-items: center; justify-content: center; transition: background var(--transition);
   }
   .header-nav button:hover { background: var(--accent-subtle); color: var(--accent); }
+  .header-nav button:disabled {
+    opacity: 0.3; cursor: default;
+  }
+  .header-nav button:disabled:hover { background: none; color: var(--text-secondary); }
   .header-nav .month-label {
     font-size: 14px; font-weight: 600; padding: 0 14px; min-width: 146px; text-align: center;
     color: var(--text); user-select: none;
@@ -108,6 +178,27 @@
   .balance-pill .value {
     font-weight: 650; color: var(--green);
   }
+  .balance-pill.hidden { display: none; }
+
+  /* ── Re-upload pill ── */
+  .reupload-pill {
+    display: flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 14px;
+    background: var(--accent-subtle);
+    border-radius: 20px; cursor: pointer;
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    border: none; font-family: inherit;
+    transition: background var(--transition);
+  }
+  .reupload-pill:hover { background: var(--accent-light); }
+
+  .theme-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border: none; background: none; border-radius: 50%;
+    cursor: pointer; font-size: 16px; color: var(--text-secondary); font-family: inherit;
+    transition: all var(--transition); margin-left: 4px;
+  }
+  .theme-toggle:hover { background: var(--accent-subtle); color: var(--accent); }
 
   /* ── Currency select ── */
   .currency-wrap { margin-left: 8px; }
@@ -211,6 +302,7 @@
     opacity: 0.8; line-height: 1;
   }
   .cal-cell.l4 .day-num, .cal-cell.l5 .day-num { opacity: 0.9; }
+
   /* Calendar cell tooltip */
   .cal-tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
@@ -358,6 +450,49 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Dark mode ── */
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d28;
+    --border: #2a2d3a;
+    --text: #e8edf5;
+    --text-secondary: #94a3b8;
+    --text-tertiary: #64748b;
+    --accent: #818cf8;
+    --accent-light: #1e1b4b;
+    --accent-subtle: rgba(129,140,248,0.12);
+    --green: #34d399;
+    --green-light: rgba(52,211,153,0.1);
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  [data-theme="dark"] .cal-cell.l0 { background: #181b28; }
+  [data-theme="dark"] .cal-cell.l1 { background: #1e1b4b; color: #a5b4fc; }
+  [data-theme="dark"] .cal-cell.l2 { background: #312e81; color: #c7d2fe; }
+  [data-theme="dark"] .cal-cell.l3 { background: #4338ca; color: #e0e7ff; }
+  [data-theme="dark"] .cal-cell.l4 { background: #4f46e5; color: #fff; }
+  [data-theme="dark"] .cal-cell.l5 { background: #6366f1; color: #fff; }
+
+  [data-theme="dark"] .cal-tooltip {
+    background: #334155; color: #f1f5f9;
+  }
+  [data-theme="dark"] .cal-tooltip::after {
+    border-top-color: #334155;
+  }
+
+  [data-theme="dark"] .loading-overlay {
+    background: rgba(15,17,23,0.75);
+  }
+
+  [data-theme="dark"] .cal-cell.selected {
+    box-shadow: 0 0 0 2px rgba(148,163,184,0.25);
+  }
+
+  [data-theme="dark"] .currency-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+
   @media (max-width: 768px) {
     .app { padding: 16px; gap: 12px; }
     .header { flex-wrap: wrap; gap: 8px; }
@@ -385,17 +520,57 @@
     .currency-select { font-size: 10px; height: 28px; padding: 0 22px 0 8px; }
     .header-nav .month-label { min-width: 110px; font-size: 12px; }
     .trend-chart-wrap { height: 100px; }
+    .drop-box { padding: 32px 24px; }
+    .drop-title { font-size: 15px; }
   }
 </style>
 </head>
-<body>
-<div class="app">
+<body ondragover="return false" ondrop="return false">
+
+<!-- ── Drop zone (hidden by default; shown only when API is unavailable) ── -->
+<div class="drop-zone hidden" id="dropZone">
+  <div class="drop-box" id="dropBox">
+    <div class="drop-icon">&#128202;</div>
+    <div class="drop-title">Load DeepSeek Usage Data</div>
+
+    <div class="drop-instructions">
+      <div class="drop-step">
+        <span class="drop-step-num">1</span>
+        <span class="drop-step-text">
+          Go to <strong>platform.deepseek.com</strong> &rarr; <strong>Usage</strong> &rarr; <strong>Export</strong>
+        </span>
+      </div>
+      <div class="drop-step">
+        <span class="drop-step-num">2</span>
+        <span class="drop-step-text">
+          Select your month and click <strong>Download Export</strong> to get a <code>.zip</code> file
+        </span>
+      </div>
+      <div class="drop-step">
+        <span class="drop-step-num">3</span>
+        <span class="drop-step-text">
+          Extract the <code>.zip</code> and drag the <strong>amount-YYYY-MM.csv</strong> file here
+        </span>
+      </div>
+    </div>
+
+    <div class="drop-hint">
+      or click to browse
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept=".csv" style="display:none">
+</div>
+
+<!-- ── Dashboard ── -->
+<div class="app" id="app">
   <!-- Header -->
   <div class="header">
     <div class="header-left">
       <h1>DeepSeek Usage</h1>
     </div>
     <div class="header-center">
+      <button class="reupload-pill" id="reuploadBtn">&#128194;&#8199;Load file</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">&#9789;</button>
       <div class="currency-wrap">
         <select class="currency-select" id="currencySelect"></select>
       </div>
@@ -434,7 +609,7 @@
       <span class="value" id="statTokenOut">—</span>
     </div>
     <div class="stat-divider"></div>
-    <div class="balance-pill">
+    <div class="balance-pill" id="balancePill">
       <span class="label">Balance</span>
       <span class="value" id="statBalance">&mdash;</span>
     </div>
@@ -456,33 +631,31 @@
           <h3>Usage heatmap</h3>
           <div class="heatmap-legend">
             <span>Low</span>
-            <span class="swatch" style="background:#f0f1f3"></span>
-            <span class="swatch" style="background:#dbeafe"></span>
-            <span class="swatch" style="background:#93c5fd"></span>
-            <span class="swatch" style="background:#60a5fa"></span>
-            <span class="swatch" style="background:#2563eb"></span>
-            <span class="swatch" style="background:#1d4ed8"></span>
+            <span class="swatch" style="background:#f1f4f9"></span>
+            <span class="swatch" style="background:#e0e7ff"></span>
+            <span class="swatch" style="background:#a5b4fc"></span>
+            <span class="swatch" style="background:#818cf8"></span>
+            <span class="swatch" style="background:#6366f1"></span>
+            <span class="swatch" style="background:#4f46e5"></span>
             <span>High</span>
           </div>
         </div>
-
         <div class="dow">
           <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
         </div>
         <div class="cal-grid" id="calGrid"></div>
       </div>
     </div>
-
     <div class="col-right">
       <div class="detail-section" id="detailSection">
         <div class="detail-header">
-          <h3 id="detailTitle">Select a day <small></small></h3>
+          <h3 id="detailTitle">Usage details</h3>
         </div>
         <div class="detail-body" id="detailBody">
           <div class="detail-empty">
-            <div class="empty-graphic">📅</div>
-            <div class="empty-title">Select a day to explore</div>
-            <div class="empty-hint">Click a day on the heatmap or a bar in the chart above</div>
+            <div class="empty-graphic">&#128202;</div>
+            <div class="empty-title">Load your usage data</div>
+            <div class="empty-hint">Drop a DeepSeek export CSV to explore daily usage</div>
           </div>
         </div>
       </div>
@@ -490,71 +663,141 @@
   </div>
 </div>
 
-  <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div>
+<div class="loading-overlay active" id="loadingOverlay"><div class="loading-spinner"></div></div>
 
 <script>
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+// ── CSV parsing ──
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { current += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { result.push(current); current = ''; }
+      else { current += ch; }
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(function(l) { return l.replace(/\r+$/, ''); });
+  if (lines.length === 0) return [];
+  const headerLine = lines[0].replace(/^\uFEFF/, '');
+  const headers = parseCSVLine(headerLine);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const values = parseCSVLine(line);
+    const row = {};
+    headers.forEach(function(h, idx) { row[h] = idx < values.length ? values[idx] : ''; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+// ── Aggregation (raw rows -> daily grouped data) ──
+
+function aggregateByDay(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    const { utc_date: date, model, api_key_name: keyName, type, price, amount } = row;
+    if (type === 'request_count') continue;
+    const groupKey = date + '||' + model + '||' + keyName;
+    let g = groups.get(groupKey);
+    if (!g) {
+      g = { date, model, api_key_name: keyName, input_cache_hit_tokens_total: 0, input_cache_miss_tokens_total: 0, output_tokens: 0, bill_amount: 0 };
+      groups.set(groupKey, g);
+    }
+    const amt = parseFloat(amount) || 0;
+    if (type === 'output_tokens') g.output_tokens += amt;
+    else if (type === 'input_cache_hit_tokens') g.input_cache_hit_tokens_total += amt;
+    else if (type === 'input_cache_miss_tokens') g.input_cache_miss_tokens_total += amt;
+    if (price && price !== '') {
+      const p = parseFloat(price);
+      if (!isNaN(p)) g.bill_amount += p * amt;
+    }
+  }
+  const result = {};
+  for (const g of groups.values()) {
+    if (!result[g.date]) result[g.date] = [];
+    result[g.date].push({
+      model: g.model,
+      api_key_name: g.api_key_name,
+      input_cache_hit_tokens_total: g.input_cache_hit_tokens_total,
+      input_cache_miss_tokens_total: g.input_cache_miss_tokens_total,
+      output_tokens: g.output_tokens,
+      bill_amount: Math.round(g.bill_amount * 100) / 100,
+    });
+  }
+  return result;
+}
+
+function computeTokenSummary(rows) {
+  let input = 0, output = 0;
+  for (const row of rows) {
+    const amt = parseFloat(row.amount) || 0;
+    if (row.type === 'output_tokens') output += amt;
+    else if (row.type === 'input_cache_hit_tokens' || row.type === 'input_cache_miss_tokens') input += amt;
+  }
+  return { input_tokens: input, output_tokens: output, total_tokens: input + output };
+}
+
 // ── Currency helpers ──
 
 const CURRENCY_SYMBOLS = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥', INR: '₹',
-  CAD: 'CA$', AUD: 'A$', CHF: 'CHF', CNY: 'CN¥',
-  KRW: '₩', BRL: 'R$', MXN: 'MX$', SGD: 'S$',
-  HKD: 'HK$', NZD: 'NZ$', SEK: 'kr', NOK: 'kr',
-  DKK: 'kr', CZK: 'Kč', PLN: 'zł', HUF: 'Ft',
-  ISK: 'kr', IDR: 'Rp', MYR: 'RM', PHP: '₱',
-  THB: '฿', TRY: '₺', ZAR: 'R', RON: 'lei',
-  ILS: '₪',
+  USD: '$', EUR: '\u20ac', GBP: '\u00a3', JPY: '\u00a5', INR: '\u20b9',
+  CAD: 'CA$', AUD: 'A$', CHF: 'CHF', CNY: 'CN\u00a5', KRW: '\u20a9',
+  BRL: 'R$', SGD: 'S$', HKD: 'HK$', NZD: 'NZ$', SEK: 'kr', NOK: 'kr',
+  DKK: 'kr', MXN: 'MX$', TWD: 'NT$', ZAR: 'R', PLN: 'z\u0142',
 };
 
-function formatCurrency(n, code) {
-  const sym = CURRENCY_SYMBOLS[code] || code + ' ';
-  return sym + Number(n).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+const SUPPORTED_CURRENCIES = [
+  'USD','EUR','GBP','JPY','INR','CAD','AUD','CHF','CNY','KRW',
+  'BRL','SGD','HKD','NZD','SEK','NOK','DKK','MXN','TWD','ZAR','PLN',
+];
+
+let rateCache = { USD: 1 };
+
+async function fetchRates() {
+  try {
+    const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
+    if (!res.ok) throw new Error('Frankfurter API returned HTTP ' + res.status);
+    const body = await res.json();
+    rateCache = { USD: 1, ...body.rates };
+  } catch (e) {
+    console.warn('Failed to fetch exchange rates:', e.message);
+  }
 }
 
-// ── State ──
+function formatCurrency(usdAmount, currency) {
+  const code = currency || state.currency;
+  const rate = rateCache[code] || 1;
+  const converted = usdAmount * rate;
+  const sym = CURRENCY_SYMBOLS[code] || code + ' ';
+  return sym + Number(converted).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-const state = {
-  year: 2026,
-  month: 6,
-  currency: localStorage.getItem('dsCurrency') || 'USD',
-  currencies: null,       // { code: 'Name', ... }
-  currencyList: [],       // sorted [code, name] pairs
-};
-
-const calGrid = document.getElementById('calGrid');
-const monthLabel = document.getElementById('monthLabel');
-const statTotal = document.getElementById('statTotal');
-const statAvg = document.getElementById('statAvg');
-const statActiveDays = document.getElementById('statActiveDays');
-const statSubDays = document.getElementById('statSubDays');
-const statTokenIn = document.getElementById('statTokenIn');
-const statTokenOut = document.getElementById('statTokenOut');
-const statBalance = document.getElementById('statBalance');
-
-const detailTitle = document.getElementById('detailTitle');
-const detailBody = document.getElementById('detailBody');
-const currencySelect = document.getElementById('currencySelect');
-
-let usageCache = {};
-let trendChart = null;
-let selectedDate = null;
-
-// ── Helpers ──
+function formatNum(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return n.toLocaleString('en-IN');
+}
 
 function pad(n) { return String(n).padStart(2, '0'); }
-
-function getDaysInMonth(year, month) {
-  return new Date(year, month, 0).getDate();
-}
-
-function getFirstDayOfMonth(year, month) {
-  return new Date(year, month - 1, 1).getDay();
-}
+function getDaysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+function getFirstDayOfMonth(year, month) { return new Date(year, month - 1, 1).getDay(); }
 
 function costLevel(cost, maxCost) {
   if (cost <= 0) return 0;
@@ -566,138 +809,226 @@ function costLevel(cost, maxCost) {
   return 5;
 }
 
-// ── Loading ──
+// ── State ──
+
+const state = {
+  year: 2026,
+  month: 6,
+  currency: localStorage.getItem('dsCurrency') || 'USD',
+  isApiMode: false,          // true = backend API, false = standalone/file
+  isFileMode: false,         // true = data came from a dropped file
+  allRows: null,             // raw CSV rows
+  data: null,                // aggregated by day (aggregateByDay output)
+  summary: null,             // token summary (computeTokenSummary output)
+  balance: null,             // from summary API (biz_data.normal_wallets[0].balance)
+  balanceCurrency: 'USD',    // from summary API
+};
+
+// ── DOM refs ──
+
+const calGrid = document.getElementById('calGrid');
+const monthLabel = document.getElementById('monthLabel');
+const statTotal = document.getElementById('statTotal');
+const statAvg = document.getElementById('statAvg');
+const statActiveDays = document.getElementById('statActiveDays');
+const statSubDays = document.getElementById('statSubDays');
+const statTokenIn = document.getElementById('statTokenIn');
+const statTokenOut = document.getElementById('statTokenOut');
+const statBalance = document.getElementById('statBalance');
+const balancePill = document.getElementById('balancePill');
+const detailTitle = document.getElementById('detailTitle');
+const detailBody = document.getElementById('detailBody');
+const currencySelect = document.getElementById('currencySelect');
+const dropZone = document.getElementById('dropZone');
+const dropBox = document.getElementById('dropBox');
+const fileInput = document.getElementById('fileInput');
+const reuploadBtn = document.getElementById('reuploadBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+let trendChart = null;
+let selectedDate = null;
+
+// ── Loading overlay ──
 
 function showLoading() {
   document.getElementById('loadingOverlay').classList.add('active');
 }
-
 function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('active');
 }
 
-// ── Balance ──
-
-async function fetchBalance() {
-  try {
-    const [summaryRes, rateRes] = await Promise.all([
-      fetch('/api/summary'),
-      fetch('/api/rate?currency=' + state.currency),
-    ]);
-    if (!summaryRes.ok) { statBalance.textContent = 'N/A'; return; }
-    const d = await summaryRes.json();
-    if (d.error) { statBalance.textContent = 'N/A'; return; }
-
-    const wallets = d.normal_wallets || [];
-    const usdWallet = wallets.find(w => w.currency === 'USD');
-    const primary = usdWallet || wallets[0];
-
-    if (primary) {
-      let bal = parseFloat(primary.balance);
-      // Convert to selected currency if rate is available
-      if (rateRes.ok && state.currency !== 'USD') {
-        const rateData = await rateRes.json();
-        if (rateData.rate) {
-          bal = bal * rateData.rate;
-        }
-      }
-      statBalance.textContent = formatCurrency(bal, state.currency);
-    } else {
-      statBalance.textContent = '—';
-    }
-  } catch {
-    statBalance.textContent = 'N/A';
-  }
-}
-
 // ── Currency dropdown ──
 
-async function fetchCurrencies() {
-  try {
-    const res = await fetch('/api/currencies');
-    if (!res.ok) return;
-    const data = await res.json();
-    state.currencies = data;
-    state.currencyList = Object.entries(data).sort((a, b) => a[0].localeCompare(b[0]));
-    populateCurrencySelect();
-  } catch { /* ignore */ }
-}
-
 function populateCurrencySelect() {
-  currencySelect.innerHTML = '';
-  for (const [code, name] of state.currencyList) {
+  if (currencySelect.options.length > 0) return;
+  for (const code of SUPPORTED_CURRENCIES) {
     const opt = document.createElement('option');
     opt.value = code;
-    opt.textContent = code + ' \u2014 ' + (CURRENCY_SYMBOLS[code] || name);
+    opt.textContent = code + ' \u2014 ' + (CURRENCY_SYMBOLS[code] || code);
     if (code === state.currency) opt.selected = true;
     currencySelect.appendChild(opt);
   }
 }
 
-currencySelect.addEventListener('change', async () => {
+currencySelect.addEventListener('change', async function() {
   const newCurrency = currencySelect.value;
   if (newCurrency === state.currency) return;
   state.currency = newCurrency;
   localStorage.setItem('dsCurrency', newCurrency);
-  usageCache = {};            // Clear cache so data re-fetches with new currency
-  selectedDate = null;
-  await Promise.all([
-    loadMonth(),
-    fetchBalance(),
-  ]);
+  if (!rateCache[newCurrency]) await fetchRates();
+  reloadFromCurrentData();
 });
 
-// ── Fetch ──
+// ── File handling / drop zone ──
 
-async function fetchUsage(year, month, currency) {
-  const key = year + '-' + month + '-' + currency;
-  if (usageCache[key]) return usageCache[key];
-  try {
-    const res = await fetch('/api/usage?month=' + month + '&year=' + year + '&currency=' + currency);
-    if (!res.ok) return null;
-    const json = await res.json();
-    // json = { data: { ... }, currency: 'USD' }
-    usageCache[key] = json;
-    return json;
-  } catch { return null; }
+function handleFile(file) {
+  if (!file || !file.name.endsWith('.csv')) {
+    alert('Please select a .csv file exported from DeepSeek.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const rows = parseCSV(text);
+    if (rows.length === 0) { alert('The CSV file appears to be empty.'); return; }
+
+    state.isApiMode = false;
+    state.isFileMode = true;
+    state.allRows = rows;
+    state.data = aggregateByDay(rows);
+    state.summary = computeTokenSummary(rows);
+
+    // Detect year/month from the first date in the data
+    const dates = Object.keys(state.data).sort();
+    if (dates.length > 0) {
+      const parts = dates[0].split('-');
+      state.year = parseInt(parts[0], 10);
+      state.month = parseInt(parts[1], 10);
+    }
+    selectedDate = null;
+
+    dropZone.classList.add('hidden');
+    populateCurrencySelect();
+    enableNavButtons(false);
+    updateBalancePill(false);
+    reloadFromCurrentData();
+  };
+  reader.readAsText(file);
 }
 
+// Prevent browser default drag behaviors
+window.addEventListener('dragover', function(e) { e.preventDefault(); });
+window.addEventListener('drop', function(e) { e.preventDefault(); });
 
+dropZone.addEventListener('dragenter', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function(e) {
+  e.preventDefault();
+  if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
 
-// ── Trend chart ──
+dropBox.addEventListener('click', function() { fileInput.click(); });
+fileInput.addEventListener('change', function() {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
 
-function renderTrend(apiData, daysInMonth) {
+reuploadBtn.addEventListener('click', function() {
+  if (state.isApiMode) {
+    // In API mode, re-upload means switching to file mode
+    dropZone.classList.remove('hidden');
+    fileInput.click();
+  } else {
+    // In file mode, re-upload with a new file
+    dropZone.classList.remove('hidden');
+    fileInput.click();
+  }
+});
+
+// ── Nav helpers ──
+
+function enableNavButtons(enabled) {
+  prevBtn.disabled = !enabled;
+  nextBtn.disabled = !enabled;
+}
+
+function updateBalancePill(show) {
+  balancePill.classList.toggle('hidden', !show);
+}
+
+// ── Render functions ──
+
+function reloadFromCurrentData() {
+  const { year, month, data, summary } = state;
+  const daysInMonth = getDaysInMonth(year, month);
+  const monthHasData = data && Object.keys(data).some(function(d) { return d.startsWith(year + '-' + pad(month)); });
+  monthLabel.textContent = MONTHS[month - 1] + ' ' + year + (monthHasData ? '' : ' \u2014 No data');
+
+  // Per-day totals
+  const dayTotals = [];
+  let maxCost = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = year + '-' + pad(month) + '-' + pad(d);
+    const total = data && data[dateStr] ? data[dateStr].reduce(function(s, e) { return s + e.bill_amount; }, 0) : 0;
+    dayTotals.push(total);
+    if (total > maxCost) maxCost = total;
+  }
+
+  // Stats
+  const totalCost = dayTotals.reduce(function(s, v) { return s + v; }, 0);
+  const activeDays = dayTotals.filter(function(v) { return v > 0; }).length;
+  const avgCost = activeDays > 0 ? totalCost / activeDays : 0;
+
+  statTotal.textContent = formatCurrency(totalCost, state.currency);
+  statAvg.textContent = formatCurrency(avgCost, state.currency);
+  statActiveDays.textContent = activeDays;
+  statSubDays.textContent = '/' + daysInMonth;
+
+  if (summary) {
+    statTokenIn.textContent = (summary.input_tokens / 1_000_000).toFixed(2) + 'M';
+    statTokenOut.textContent = (summary.output_tokens / 1_000_000).toFixed(2) + 'M';
+  }
+
+  // Balance (only in API mode)
+  if (state.isApiMode && state.balance !== null) {
+    const sym = CURRENCY_SYMBOLS[state.balanceCurrency] || '$';
+    const bal = parseFloat(state.balance);
+    const rate = rateCache[state.currency] || 1;
+    const converted = bal * rate;
+    statBalance.textContent = sym + ' ' + Number(converted).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  renderTrend(dayTotals);
+  renderCalendar(dayTotals, daysInMonth, maxCost);
+  selectFirstDayWithData();
+}
+
+function renderTrend(dayTotals) {
   const canvas = document.getElementById('trendChart');
   if (trendChart) trendChart.destroy();
 
-  const data = apiData ? apiData.data : null;
-  const currency = apiData ? apiData.currency : state.currency;
-  const labels = [];
-  const values = [];
-  const dayTotals = {};
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = state.year + '-' + pad(state.month) + '-' + pad(d);
-    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount, 0) : 0;
-    labels.push(d);
-    values.push(total);
-    dayTotals[dateStr] = total;
-  }
-
-  // Build gradient context for active bars
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height || 150);
   gradient.addColorStop(0, '#818cf8');
   gradient.addColorStop(1, '#6366f1');
 
-  const barColors = values.map(v => v > 0 ? gradient : '#e8ecf2');
+  const labels = dayTotals.map(function(_, i) { return i + 1; });
+  const barColors = dayTotals.map(function(v) { return v > 0 ? gradient : (isDark ? '#2a2d3a' : '#e8ecf2'); });
 
   trendChart = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels,
+      labels: labels,
       datasets: [{
-        data: values,
+        data: dayTotals,
         backgroundColor: barColors,
         borderRadius: 3,
         borderSkipped: false,
@@ -711,7 +1042,7 @@ function renderTrend(apiData, daysInMonth) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0f172a',
+          backgroundColor: isDark ? '#1e293b' : '#0f172a',
           titleColor: '#e2e8f0',
           bodyColor: '#f1f5f9',
           padding: 10,
@@ -724,7 +1055,7 @@ function renderTrend(apiData, daysInMonth) {
               return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
             },
             label: function(item) {
-              return 'Cost: ' + formatCurrency(item.raw, currency);
+              return 'Cost: ' + formatCurrency(item.raw);
             },
           },
         },
@@ -737,62 +1068,23 @@ function renderTrend(apiData, daysInMonth) {
         },
         y: { display: false, beginAtZero: true },
       },
-      onClick(_, elements) {
+      onClick: function(_, elements) {
         if (elements.length > 0) {
-          const idx = elements[0].index;
-          const day = idx + 1;
+          const day = elements[0].index + 1;
           const dateStr = state.year + '-' + pad(state.month) + '-' + pad(day);
           selectDay(dateStr);
         }
       },
-      onHover(_, elements) {
-        document.getElementById('trendChart').style.cursor = elements.length > 0 ? 'pointer' : 'default';
+      onHover: function(_, elements) {
+        canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
       },
     },
   });
-
-  return dayTotals;
 }
 
-// ── Calendar heatmap ──
-
-function renderCalendar(apiData) {
+function renderCalendar(dayTotals, daysInMonth, maxCost) {
   const { year, month } = state;
-  const data = apiData ? apiData.data : null;
-  const currency = apiData ? apiData.currency : state.currency;
-  const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
-  var monthHasData = data && Object.keys(data).some(function(d) { return d.startsWith(year + '-' + pad(month)); });
-  monthLabel.textContent = MONTHS[month - 1] + ' ' + year + (monthHasData ? '' : ' \u2014 No data');
-
-  // Per-day totals for heatmap intensity
-  const dayTotals = [];
-  let maxCost = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = year + '-' + pad(month) + '-' + pad(d);
-    const total = data && data[dateStr] ? data[dateStr].reduce((s, e) => s + e.bill_amount, 0) : 0;
-    dayTotals.push(total);
-    if (total > maxCost) maxCost = total;
-  }
-
-  // Stats
-  const totalCost = dayTotals.reduce((s, v) => s + v, 0);
-  const activeDays = dayTotals.filter(v => v > 0).length;
-  const avgCost = activeDays > 0 ? totalCost / activeDays : 0;
-
-  statTotal.textContent = formatCurrency(totalCost, currency);
-  statAvg.textContent = formatCurrency(avgCost, currency);
-  statActiveDays.textContent = activeDays;
-  statSubDays.textContent = '/' + daysInMonth;
-
-  // Token summary from API
-  if (apiData && apiData.summary) {
-    const s = apiData.summary;
-    statTokenIn.textContent = (s.input_tokens / 1_000_000).toFixed(2) + 'M';
-    statTokenOut.textContent = (s.output_tokens / 1_000_000).toFixed(2) + 'M';
-  }
-
-  // Build grid
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
   calGrid.innerHTML = '';
 
@@ -810,55 +1102,42 @@ function renderCalendar(apiData) {
     const dateStr = year + '-' + pad(month) + '-' + pad(dayNum);
     cell.dataset.date = dateStr;
 
-    // Today
     const today = new Date();
     if (today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === dayNum) {
       cell.classList.add('today');
     }
-
-    // Selected
     if (selectedDate === dateStr) cell.classList.add('selected');
 
-    // Heat level
     const cost = dayTotals[dayNum - 1];
     const level = costLevel(cost, maxCost);
     cell.classList.add('l' + level);
 
-    // Day number (top-left)
     const num = document.createElement('span');
     num.className = 'day-num';
     num.textContent = dayNum;
     cell.appendChild(num);
 
-    // Tooltip with cost
     if (cost > 0) {
       const tip = document.createElement('div');
       tip.className = 'cal-tooltip';
-      tip.textContent = formatCurrency(cost, currency);
+      tip.textContent = formatCurrency(cost);
       cell.appendChild(tip);
     }
 
-    cell.addEventListener('click', () => selectDay(dateStr));
+    cell.addEventListener('click', function() { selectDay(dateStr); });
     calGrid.appendChild(cell);
   }
 
-  // Reset selectedDate if it's no longer in this month
   if (selectedDate && !selectedDate.startsWith(year + '-' + pad(month))) {
     selectedDate = null;
     showEmptyState();
   }
 }
 
-// ── Detail table ──
-
-function formatNum(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-  return n.toLocaleString('en-IN');
-}
+// ── Detail ──
 
 function showEmptyState() {
-  detailTitle.innerHTML = 'Usage details';
+  detailTitle.textContent = 'Usage details';
   detailBody.innerHTML =
     '<div class="detail-empty">' +
     '<div class="empty-graphic">\ud83d\udcc5</div>' +
@@ -869,23 +1148,17 @@ function showEmptyState() {
 
 function selectDay(dateStr) {
   selectedDate = dateStr;
-  const cacheKey = state.year + '-' + state.month + '-' + state.currency;
-  const apiData = usageCache[cacheKey];
-  const data = apiData ? apiData.data : null;
-  const currency = apiData ? apiData.currency : state.currency;
+  const entries = state.data && state.data[dateStr] ? state.data[dateStr] : null;
+  if (!entries) { showEmptyState(); return; }
 
-  if (!data || !data[dateStr]) { showEmptyState(); return; }
-
-  const entries = data[dateStr];
-  const dayTotal = entries.reduce((s, e) => s + e.bill_amount, 0);
+  const dayTotal = entries.reduce(function(s, e) { return s + e.bill_amount; }, 0);
   const date = new Date(dateStr + 'T00:00:00');
 
   detailTitle.innerHTML =
     '<span>' + MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() + '</span>' +
-    '<span class="day-cost-badge">' + formatCurrency(dayTotal, currency) + '</span>';
+    '<span class="day-cost-badge">' + formatCurrency(dayTotal) + '</span>';
 
-  // Highlight selected cell
-  document.querySelectorAll('.cal-cell.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.cal-cell.selected').forEach(function(el) { el.classList.remove('selected'); });
   const sel = document.querySelector('.cal-cell[data-date="' + dateStr + '"]');
   if (sel) sel.classList.add('selected');
 
@@ -898,16 +1171,16 @@ function selectDay(dateStr) {
     return m.replace(/^deepseek-/, '').replace(/-/g, ' ');
   }
   function cacheRate(hit, miss) {
-    var total = hit + miss;
+    const total = hit + miss;
     if (total === 0) return '-';
     return Math.round(hit / total * 100) + '%';
   }
 
-  var html = '<table class="detail-table"><thead><tr>' +
+  let html = '<table class="detail-table"><thead><tr>' +
     '<th>API Key</th><th class="num">Output</th><th class="num">Cache hit</th><th class="num">Cache miss</th><th class="num">Hit rate</th><th class="num">Cost</th>' +
     '</tr></thead><tbody>';
 
-  var totalOutput = 0, totalHit = 0, totalMiss = 0, totalCost = 0;
+  let totalOutput = 0, totalHit = 0, totalMiss = 0, totalCost = 0;
 
   for (const e of entries) {
     totalOutput += e.output_tokens;
@@ -921,72 +1194,164 @@ function selectDay(dateStr) {
       '<td class="num">' + formatNum(e.input_cache_hit_tokens_total) + '</td>' +
       '<td class="num">' + formatNum(e.input_cache_miss_tokens_total) + '</td>' +
       '<td class="num" style="font-weight:600;color:var(--green);">' + cacheRate(e.input_cache_hit_tokens_total, e.input_cache_miss_tokens_total) + '</td>' +
-      '<td class="cost-cell">' + formatCurrency(e.bill_amount, currency) + '</td>' +
+      '<td class="cost-cell">' + formatCurrency(e.bill_amount) + '</td>' +
       '</tr>';
   }
 
-  // Total row
   html += '<tr class="total-row">' +
     '<td><span class="model-cell" style="background:var(--accent-light);font-weight:600;">Total<small>' + entries.length + ' key' + (entries.length > 1 ? 's' : '') + '</small></span></td>' +
     '<td class="num">' + formatNum(totalOutput) + '</td>' +
     '<td class="num">' + formatNum(totalHit) + '</td>' +
     '<td class="num">' + formatNum(totalMiss) + '</td>' +
     '<td class="num" style="font-weight:600;color:var(--green);">' + cacheRate(totalHit, totalMiss) + '</td>' +
-    '<td class="cost-cell">' + formatCurrency(totalCost, currency) + '</td>' +
+    '<td class="cost-cell">' + formatCurrency(totalCost) + '</td>' +
     '</tr>';
 
   html += '</tbody></table>';
   detailBody.innerHTML = html;
 }
 
-// ── Navigation ──
+function selectFirstDayWithData() {
+  if (!state.data) return;
+  const sorted = Object.keys(state.data).sort();
+  for (const dateStr of sorted) {
+    if (dateStr.startsWith(state.year + '-' + pad(state.month)) && state.data[dateStr].length > 0) {
+      selectDay(dateStr);
+      return;
+    }
+  }
+  showEmptyState();
+}
+
+// ── API mode ──
+
+async function fetchExportCSV(year, month) {
+  const res = await fetch('/api/usage/export?month=' + month + '&year=' + year);
+  if (!res.ok) throw new Error('Export API returned HTTP ' + res.status);
+  return await res.text();
+}
+
+async function fetchSummary() {
+  const res = await fetch('/api/usage/summary');
+  if (!res.ok) throw new Error('Summary API returned HTTP ' + res.status);
+  return await res.json();
+}
+
+async function loadMonthFromAPI(year, month) {
+  showLoading();
+  try {
+    const csvText = await fetchExportCSV(year, month);
+    const rows = parseCSV(csvText);
+    state.allRows = rows;
+    state.data = aggregateByDay(rows);
+    state.summary = computeTokenSummary(rows);
+    state.year = year;
+    state.month = month;
+    selectedDate = null;
+
+    // Balance is fetched once on init, not per navigation
+    reloadFromCurrentData();
+  } catch (e) {
+    console.warn('Failed to load month from API:', e.message);
+    monthLabel.textContent = MONTHS[month - 1] + ' ' + year + ' \u2014 No data';
+  }
+  hideLoading();
+}
 
 async function navigate(delta) {
-  showLoading();
+  if (!state.isApiMode) return;
   state.month += delta;
   if (state.month < 1) { state.month = 12; state.year--; }
   if (state.month > 12) { state.month = 1; state.year++; }
   selectedDate = null;
   showEmptyState();
-  await loadMonth();
+  await loadMonthFromAPI(state.year, state.month);
+}
+
+prevBtn.addEventListener('click', function() { navigate(-1); });
+nextBtn.addEventListener('click', function() { navigate(1); });
+
+// ── Init: detect API and bootstrap ──
+
+async function init() {
+  populateCurrencySelect();
+  await fetchRates();
+
+  try {
+    // Try API mode first
+    const csvText = await fetchExportCSV(state.year, state.month);
+    const rows = parseCSV(csvText);
+    state.isApiMode = true;
+    state.isFileMode = false;
+    state.allRows = rows;
+    state.data = aggregateByDay(rows);
+    state.summary = computeTokenSummary(rows);
+    enableNavButtons(true);
+
+    // Fetch balance from summary API
+    try {
+      const summaryData = await fetchSummary();
+      const bizData = summaryData && summaryData.data && summaryData.data.biz_data;
+      if (bizData && bizData.normal_wallets && bizData.normal_wallets.length > 0) {
+        const wallet = bizData.normal_wallets[0];
+        state.balance = parseFloat(wallet.balance);
+        state.balanceCurrency = wallet.currency || 'USD';
+      }
+    } catch (e) {
+      console.warn('Failed to fetch balance:', e.message);
+    }
+    updateBalancePill(state.balance !== null);
+
+    reloadFromCurrentData();
+  } catch (e) {
+    // API not available - show drop zone instead
+    console.log('API not available, showing file drop zone:', e.message);
+    state.isApiMode = false;
+    state.isFileMode = false;
+    enableNavButtons(false);
+    updateBalancePill(false);
+    dropZone.classList.remove('hidden');
+  }
   hideLoading();
 }
 
-document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
-document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
+// ── Dark mode ──
 
-// ── Load month data ──
-
-async function loadMonth() {
-  const apiData = await fetchUsage(state.year, state.month, state.currency);
-  const daysInMonth = getDaysInMonth(state.year, state.month);
-  renderTrend(apiData, daysInMonth);
-  renderCalendar(apiData);
-  selectFirstDayWithData(apiData);
-}
-
-// ── Init ──
-
-function selectFirstDayWithData(apiData) {
-  if (!apiData || !apiData.data) return;
-  const sorted = Object.keys(apiData.data).sort();
-  for (const dateStr of sorted) {
-    if (apiData.data[dateStr].length > 0) {
-      selectDay(dateStr);
-      return;
-    }
+function setTheme(theme) {
+  if (!theme) {
+    theme = localStorage.getItem('dsTheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('dsTheme', theme);
+  document.getElementById('themeToggle').textContent = theme === 'dark' ? '\u2600' : '\u263E';
+  // Re-render chart to update JS-based tooltip & bar colors
+  if (state.data) {
+    const savedDate = selectedDate;
+    reloadFromCurrentData();
+    if (savedDate && state.data[savedDate]) selectDay(savedDate);
   }
 }
 
-(async () => {
-  showLoading();
-  await Promise.all([
-    fetchCurrencies(),
-    fetchBalance(),
-  ]);
-  await loadMonth();
-  hideLoading();
+document.getElementById('themeToggle').addEventListener('click', function() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+});
+
+// Apply saved or system theme preference on load
+(function() {
+  const saved = localStorage.getItem('dsTheme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('themeToggle').textContent = saved === 'dark' ? '\u2600' : '\u263E';
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('themeToggle').textContent = '\u2600';
+  }
 })();
+
+// ── Boot ──
+
+init();
 </script>
 </body>
 </html>

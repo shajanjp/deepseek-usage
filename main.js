@@ -4,10 +4,13 @@
  * DeepSeek Usage Dashboard — server entry point.
  *
  * Endpoints:
- *   GET  /                               — serve the HTML dashboard
- *   GET  /api/usage?month=&year=&currency= — aggregated usage JSON + token summary
- *   GET  /api/currencies                 — list of supported currency codes/names
- *   GET  /api/balance                    — DeepSeek account balance
+ *   GET  /                          — serve the HTML dashboard
+ *   GET  /api/usage/export?month=&year= — raw CSV text from DeepSeek export API
+ *   GET  /api/usage/summary          — raw JSON from DeepSeek user summary API
+ *
+ * Both API endpoints are thin proxies — they return the exact same response
+ * from DeepSeek without any formatting or calculations. All currency
+ * conversion and data aggregation is done on the frontend.
  */
 
 import { serve } from '@hono/node-server';
@@ -17,10 +20,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-import { getUsageRows } from './lib/deepseek.js';
-import { aggregateByDay, computeTokenSummary } from './lib/usage.js';
-import { getExchangeRate, getSupportedCurrencies } from './lib/exchange.js';
-import { fetchUserSummary } from './lib/deepseek.js';
+import { fetchUsageExportRaw, fetchUserSummary } from './lib/deepseek.js';
 
 // -- Paths ------------------------------------------------------------------
 
@@ -47,41 +47,11 @@ app.get('/', (c) => {
   return c.html(html);
 });
 
-// List supported currencies
-app.get('/api/currencies', async (c) => {
-  const currencies = await getSupportedCurrencies();
-  return c.json(currencies);
-});
-
-// Exchange rate from USD to a target currency
-app.get('/api/rate', async (c) => {
-  const currency = (c.req.query('currency') || 'USD').toUpperCase();
-  try {
-    const rate = await getExchangeRate(currency);
-    return c.json({ currency, rate });
-  } catch (err) {
-    return c.json({ currency, rate: null }, 502);
-  }
-});
-
-// DeepSeek account summary (balance, monthly usage, wallet info)
-app.get('/api/summary', async (c) => {
-  try {
-    const data = await fetchUserSummary(BEARER_TOKEN);
-    return c.json(data);
-  } catch (err) {
-    console.error(`[error] Failed to fetch user summary: ${err.message}`);
-    return c.json({ error: 'Failed to fetch summary' }, 502);
-  }
-});
-
-// API: aggregated usage for a given month
-app.get('/api/usage', async (c) => {
+// Proxy: raw CSV text from DeepSeek usage export API
+app.get('/api/usage/export', async (c) => {
   const monthRaw = c.req.query('month');
   const yearRaw = c.req.query('year');
-  const currency = (c.req.query('currency') || 'USD').toUpperCase();
 
-  // --- Validate query params ---
   if (!monthRaw || !yearRaw) {
     return c.json({ error: 'month and year query parameters are required' }, 400);
   }
@@ -93,28 +63,24 @@ app.get('/api/usage', async (c) => {
     return c.json({ error: 'Invalid month or year' }, 400);
   }
 
-  // --- Validate currency ---
-  const supported = await getSupportedCurrencies();
-  if (!supported[currency]) {
-    return c.json({ error: `Unsupported currency: ${currency}` }, 400);
-  }
-
-  // --- Fetch usage rows (with cache) ---
-  let rows;
   try {
-    rows = await getUsageRows(year, month, DATA_DIR, BEARER_TOKEN);
+    const csvText = await fetchUsageExportRaw(year, month, DATA_DIR, BEARER_TOKEN);
+    return c.newResponse(csvText, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
   } catch (err) {
-    console.error(`[error] ${err.message}`);
+    console.error(`[error] Failed to fetch usage export: ${err.message}`);
     return c.json({ error: `Failed to fetch usage data: ${err.message}` }, 502);
   }
+});
 
-  // --- Get exchange rate (with cache, tolerant of failure) ---
-  const rate = await getExchangeRate(currency);
-
-  // --- Aggregate and return ---
-  const data = aggregateByDay(rows, rate, currency);
-  const summary = computeTokenSummary(rows);
-  return c.json({ data, currency, summary });
+// Proxy: raw JSON from DeepSeek user summary API
+app.get('/api/usage/summary', async (c) => {
+  try {
+    const data = await fetchUserSummary(BEARER_TOKEN);
+    return c.json(data);
+  } catch (err) {
+    console.error(`[error] Failed to fetch user summary: ${err.message}`);
+    return c.json({ error: 'Failed to fetch summary' }, 502);
+  }
 });
 
 // Global error handler
@@ -129,6 +95,8 @@ serve(
   { fetch: app.fetch, port: PORT },
   (info) => {
     console.log(`DeepSeek Usage API running on http://localhost:${info.port}`);
-    console.log(`Endpoint: GET /api/usage?month=9&year=2026`);
+    console.log(`Endpoints:`);
+    console.log(`  GET /api/usage/export?month=6&year=2026`);
+    console.log(`  GET /api/usage/summary`);
   },
 );
