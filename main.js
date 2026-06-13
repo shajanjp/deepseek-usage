@@ -14,6 +14,7 @@
  */
 
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import 'dotenv/config';
 import { readFileSync } from 'fs';
@@ -40,6 +41,9 @@ const PORT = parseInt(process.env.PORT, 10) || 3000;
 // -- Hono app ---------------------------------------------------------------
 
 const app = new Hono();
+
+// Serve static assets (images, favicons, etc.)
+app.use('/assets/*', serveStatic({ root: '.' }));
 
 // Serve the dashboard HTML
 app.get('/', (c) => {
