@@ -6,6 +6,9 @@ node_modules/
 
 # Usage data
 data/
+
+# Sample files
+sample/
 *.csv
 
 # OS files
