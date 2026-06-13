@@ -42,6 +42,10 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-center {
+    display: flex; align-items: center; gap: 8px;
+    margin-left: auto;
+  }
   .header-left h1 {
     font-size: 20px; font-weight: 650; letter-spacing: -0.3px;
     background: linear-gradient(135deg, var(--text), var(--accent));
@@ -106,19 +110,19 @@
   }
 
   /* ── Currency select ── */
-  .currency-wrap { margin-left: 10px; }
+  .currency-wrap { margin-left: 8px; }
   .currency-select {
     appearance: none; -webkit-appearance: none;
-    font-size: 12px; font-weight: 500;
-    padding: 5px 28px 5px 12px;
+    font-size: 11px; font-weight: 500;
+    height: 32px; padding: 0 28px 0 12px;
     border: 1px solid var(--border); border-radius: 20px;
     background: var(--surface);
     color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 8px center;
+    background-position: right 7px center;
   }
   .currency-select:hover { border-color: var(--accent); color: var(--text); }
   .currency-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
@@ -356,6 +360,8 @@
 
   @media (max-width: 768px) {
     .app { padding: 16px; gap: 12px; }
+    .header { flex-wrap: wrap; gap: 8px; }
+    .header-center { order: 3; width: 100%; justify-content: center; margin-left: 0; }
     .header-left h1 { font-size: 17px; }
     .stats { flex-wrap: wrap; padding: 10px 14px; gap: 6px 0; }
     .stat-divider { display: none; }
@@ -363,7 +369,6 @@
     .stat-item .value { font-size: 16px; }
     .stat-item .sub { font-size: 10px; }
     .balance-pill { margin-left: 0; padding: 4px 10px 4px 8px; }
-    .currency-wrap { margin-left: auto; }
     .main-grid { flex-direction: column; }
     .main-grid .col-left { width: 100%; }
     .calendar-section { padding: 12px; }
@@ -377,7 +382,7 @@
     .stat-item .label { font-size: 9px; }
     .balance-pill { font-size: 10px; padding: 3px 8px 3px 6px; }
     .balance-pill .value { font-size: 11px; }
-    .currency-select { font-size: 10px; padding: 3px 22px 3px 8px; }
+    .currency-select { font-size: 10px; height: 28px; padding: 0 22px 0 8px; }
     .header-nav .month-label { min-width: 110px; font-size: 12px; }
     .trend-chart-wrap { height: 100px; }
   }
@@ -389,6 +394,11 @@
   <div class="header">
     <div class="header-left">
       <h1>DeepSeek Usage</h1>
+    </div>
+    <div class="header-center">
+      <div class="currency-wrap">
+        <select class="currency-select" id="currencySelect"></select>
+      </div>
     </div>
     <div class="header-nav">
       <button id="prevBtn">&larr;</button>
@@ -415,15 +425,18 @@
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <span class="label">Tokens</span>
-      <span class="value" id="statTokens" style="display:flex;align-items:baseline;gap:6px;"><span id="statTokenTotal">—</span><span class="sub" id="statTokenBreakdown" style="font-size:11px;"></span></span>
+      <span class="label">In</span>
+      <span class="value" id="statTokenIn">—</span>
     </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="label">Out</span>
+      <span class="value" id="statTokenOut">—</span>
+    </div>
+    <div class="stat-divider"></div>
     <div class="balance-pill">
       <span class="label">Balance</span>
       <span class="value" id="statBalance">&mdash;</span>
-    </div>
-    <div class="currency-wrap">
-      <select class="currency-select" id="currencySelect"></select>
     </div>
   </div>
 
@@ -519,8 +532,8 @@ const statTotal = document.getElementById('statTotal');
 const statAvg = document.getElementById('statAvg');
 const statActiveDays = document.getElementById('statActiveDays');
 const statSubDays = document.getElementById('statSubDays');
-const statTokenTotal = document.getElementById('statTokenTotal');
-const statTokenBreakdown = document.getElementById('statTokenBreakdown');
+const statTokenIn = document.getElementById('statTokenIn');
+const statTokenOut = document.getElementById('statTokenOut');
 const statBalance = document.getElementById('statBalance');
 
 const detailTitle = document.getElementById('detailTitle');
@@ -615,7 +628,7 @@ function populateCurrencySelect() {
   for (const [code, name] of state.currencyList) {
     const opt = document.createElement('option');
     opt.value = code;
-    opt.textContent = code + ' \u2014 ' + name;
+    opt.textContent = code + ' \u2014 ' + (CURRENCY_SYMBOLS[code] || name);
     if (code === state.currency) opt.selected = true;
     currencySelect.appendChild(opt);
   }
@@ -775,10 +788,8 @@ function renderCalendar(apiData) {
   // Token summary from API
   if (apiData && apiData.summary) {
     const s = apiData.summary;
-    statTokenTotal.textContent = (s.total_tokens / 1_000_000).toFixed(2) + 'M';
-    statTokenBreakdown.textContent =
-      (s.input_tokens / 1_000_000).toFixed(2) + 'M in \u00b7 ' +
-      (s.output_tokens / 1_000_000).toFixed(2) + 'M out';
+    statTokenIn.textContent = (s.input_tokens / 1_000_000).toFixed(2) + 'M';
+    statTokenOut.textContent = (s.output_tokens / 1_000_000).toFixed(2) + 'M';
   }
 
   // Build grid
