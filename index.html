@@ -105,11 +105,12 @@
 
   /* ── Header ── */
   .header {
-    display: flex; align-items: center; gap: 16px;
+    display: flex; align-items: center; gap: 12px;
   }
   .header-left { flex-shrink: 0; display: flex; align-items: center; gap: 12px; }
-  .header-center {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  .header-right {
+    flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    min-width: 0;
   }
   .header-left h1 {
     font-size: 20px; font-weight: 650; letter-spacing: -0.3px;
@@ -118,41 +119,39 @@
     background-clip: text;
   }
 
+  /* ── Header nav (month/year pill) ── */
   .header-nav {
-    flex-shrink: 0; display: flex; align-items: center; gap: 4px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 3px; box-shadow: var(--shadow);
+    flex-shrink: 0; display: flex; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 2px; box-shadow: var(--shadow);
   }
   .header-nav button {
-    width: 32px; height: 32px; border: none; background: none; border-radius: 6px;
-    cursor: pointer; font-size: 15px; color: var(--text-secondary); display: flex;
+    width: 30px; height: 30px; border: none; background: none; border-radius: 6px;
+    cursor: pointer; font-size: 14px; color: var(--text-secondary); display: flex;
     align-items: center; justify-content: center; transition: background var(--transition);
   }
   .header-nav button:hover { background: var(--accent-subtle); color: var(--accent); }
   .header-nav button:disabled {
-    opacity: 0.3; cursor: default;
+    opacity: 0.25; cursor: default;
   }
   .header-nav button:disabled:hover { background: none; color: var(--text-secondary); }
   .month-picker {
-    display: flex; align-items: center; gap: 6px;
-    min-width: 150px; justify-content: center;
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 8px;
   }
-  .month-select {
-    font-size: 14px; font-weight: 600;
+  .month-select, .year-select {
+    font-size: 13px; font-weight: 600;
     color: var(--text); background: none;
     border: none; cursor: pointer; outline: none;
-    padding: 0; font-family: inherit;
-    text-align: center;
+    padding: 0 2px; font-family: inherit;
+    text-align: center; appearance: none; -webkit-appearance: none;
   }
-  .month-select:hover { color: var(--accent); }
-  .year-select {
-    font-size: 14px; font-weight: 600; width: 58px;
-    color: var(--text); background: none;
-    border: none; cursor: pointer; outline: none;
-    padding: 0; font-family: inherit;
-    text-align: center;
+  .month-select { width: 38px; }
+  .year-select { width: 44px; }
+  .month-select:hover, .year-select:hover { color: var(--accent); }
+  .header-nav .nav-divider {
+    width: 1px; height: 18px; background: var(--border); flex-shrink: 0;
   }
-  .year-select:hover { color: var(--accent); }
 
   /* ── Stats bar ── */
   .stats {
@@ -196,33 +195,38 @@
   .balance-pill.hidden { display: none; }
 
   /* ── Re-upload pill ── */
-  /* ── Header controls ── */
-  .header-controls {
+  /* ── Header actions (controls + nav, right-aligned) ── */
+  .header-actions {
     display: flex; align-items: center; gap: 6px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 3px 4px 3px 6px;
-    box-shadow: var(--shadow);
   }
-  .header-controls .divider {
+
+  /* ── Secondary controls (load file, theme, currency) ── */
+  .header-controls {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 2px; box-shadow: var(--shadow);
+    height: 36px; box-sizing: border-box;
+  }
+  .header-controls .ctrl-divider {
     width: 1px; height: 20px; background: var(--border); flex-shrink: 0;
   }
 
   .reupload-pill {
     display: flex; align-items: center; gap: 4px;
-    height: 26px; padding: 0 10px;
-    background: var(--accent-subtle);
-    border-radius: 13px; cursor: pointer;
-    font-size: 11px; font-weight: 500; color: var(--accent);
+    height: 30px; padding: 0 9px;
+    background: none; border-radius: 6px; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
     border: none; font-family: inherit; white-space: nowrap;
     transition: background var(--transition);
   }
-  .reupload-pill:hover { background: var(--accent-light); }
+  .reupload-pill:hover { background: var(--accent-subtle); color: var(--accent); }
 
   .theme-toggle {
     display: flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; border: none; background: none; border-radius: 50%;
+    width: 28px; height: 30px; border: none;
+    background: none; border-radius: 6px;
     cursor: pointer; font-size: 15px; color: var(--text-secondary); font-family: inherit;
-    line-height: 1; transition: all var(--transition);
+    line-height: 1; transition: background var(--transition);
   }
   .theme-toggle:hover { background: var(--accent-subtle); color: var(--accent); }
 
@@ -230,18 +234,19 @@
   .currency-wrap { flex-shrink: 0; }
   .currency-select {
     appearance: none; -webkit-appearance: none;
-    font-size: 11px; font-weight: 500;
-    height: 26px; padding: 0 24px 0 8px;
-    border: none; border-radius: 13px;
-    background: transparent;
+    font-size: 12px; font-weight: 500; height: 30px;
+    padding: 0 16px 0 8px;
+    border: none; border-radius: 6px;
+    background-color: transparent;
     color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    cursor: pointer; outline: none;
+    transition: background-color var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 4px center;
+    background-size: 8px 8px;
   }
-  .currency-select:hover { color: var(--accent); }
+  .currency-select:hover { background-color: var(--accent-subtle); color: var(--accent); }
   .currency-select:focus { outline: none; }
 
   /* ── Trend chart ── */
@@ -522,7 +527,7 @@
   }
 
   [data-theme="dark"] .currency-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   }
 
   @media (max-width: 768px) {
@@ -551,14 +556,14 @@
     .stat-item .label { font-size: 9px; }
     .balance-pill { font-size: 10px; padding: 3px 8px 3px 6px; }
     .balance-pill .value { font-size: 11px; }
-    .header-center { gap: 4px; }
-    .header-controls { padding: 2px 3px 2px 5px; gap: 4px; }
-    .reupload-pill { height: 24px; padding: 0 8px; font-size: 10px; }
-    .theme-toggle { width: 24px; height: 24px; font-size: 13px; line-height: 1; }
-    .currency-select { height: 24px; font-size: 10px; padding: 0 20px 0 6px; }
-    .month-picker { min-width: 120px; gap: 4px; }
-    .month-select { font-size: 12px; }
-    .year-select { font-size: 12px; width: 50px; }
+    .header-right { gap: 2px; }
+    .header-controls { gap: 2px; }
+    .reupload-pill { height: 28px; padding: 0 7px; font-size: 11px; }
+    .theme-toggle { width: 26px; height: 28px; font-size: 13px; line-height: 1; }
+    .currency-select { height: 28px; font-size: 11px; padding: 0 16px 0 6px; }
+    .month-picker { padding: 0 4px; gap: 2px; }
+    .month-select { width: 34px; font-size: 12px; }
+    .year-select { width: 40px; font-size: 12px; }
     .trend-chart-wrap { height: 100px; }
     .drop-box { padding: 32px 24px; }
     .drop-title { font-size: 15px; }
@@ -608,24 +613,26 @@
     <div class="header-left">
       <h1>DeepSeek Usage</h1>
     </div>
-    <div class="header-center">
+    <div class="header-right">
       <div class="header-controls">
         <button class="reupload-pill" id="reuploadBtn">&#128194;&#8199;Load file</button>
-        <div class="divider"></div>
-        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">&#9789;</button>
-        <div class="divider"></div>
+        <div class="ctrl-divider"></div>
         <div class="currency-wrap">
           <select class="currency-select" id="currencySelect"></select>
         </div>
+        <div class="ctrl-divider"></div>
+        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">&#9789;</button>
       </div>
-    </div>
-    <div class="header-nav">
-      <button id="prevBtn">&larr;</button>
-      <div class="month-picker">
-        <select id="monthSelect" class="month-select" aria-label="Month"></select>
-        <select id="yearInput" class="year-select" aria-label="Year"></select>
+      <div class="header-nav">
+        <button id="prevBtn">&larr;</button>
+        <div class="nav-divider"></div>
+        <div class="month-picker">
+          <select id="monthSelect" class="month-select" aria-label="Month"></select>
+          <select id="yearInput" class="year-select" aria-label="Year"></select>
+        </div>
+        <div class="nav-divider"></div>
+        <button id="nextBtn">&rarr;</button>
       </div>
-      <button id="nextBtn">&rarr;</button>
     </div>
   </div>
 
