@@ -36,7 +36,14 @@ if (!BEARER_TOKEN) {
   process.exit(1);
 }
 
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+// Parse port: env > --port/-p flag > default 3000
+const PORT_ARG = (() => {
+  const idx = process.argv.findIndex((a) => a === '--port' || a === '-p');
+  return idx !== -1 && idx + 1 < process.argv.length
+    ? parseInt(process.argv[idx + 1], 10)
+    : NaN;
+})();
+const PORT = PORT_ARG || parseInt(process.env.PORT, 10) || 3000;
 
 // -- Hono app ---------------------------------------------------------------
 

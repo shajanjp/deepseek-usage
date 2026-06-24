@@ -1916,7 +1916,7 @@
 
                 // Balance (only in API mode)
                 if (state.isApiMode && state.balance !== null) {
-                    const sym = CURRENCY_SYMBOLS[state.balanceCurrency] || "$";
+                    const sym = CURRENCY_SYMBOLS[state.currency] || "$";
                     const bal = parseFloat(state.balance);
                     const rate = rateCache[state.currency] || 1;
                     const converted = bal * rate;
