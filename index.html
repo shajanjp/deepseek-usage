@@ -1846,7 +1846,19 @@
 
             function enableNavButtons(enabled) {
                 prevBtn.disabled = !enabled;
-                nextBtn.disabled = !enabled;
+                if (!enabled) {
+                    nextBtn.disabled = true;
+                } else {
+                    updateNextBtnDisabledState();
+                }
+            }
+
+            function updateNextBtnDisabledState() {
+                const now = new Date();
+                const isCurrentMonth =
+                    state.year === now.getFullYear() &&
+                    state.month === now.getMonth() + 1;
+                nextBtn.disabled = isCurrentMonth;
             }
 
             function updateBalancePill(show) {
@@ -1856,6 +1868,7 @@
             // ── Render functions ──
 
             function reloadFromCurrentData() {
+                updateNextBtnDisabledState();
                 const { year, month, data, summary } = state;
                 const daysInMonth = getDaysInMonth(year, month);
                 const monthHasData =
