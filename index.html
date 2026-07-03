@@ -1679,9 +1679,11 @@
 
             // ── State ──
 
-            const state = {
-                year: 2026,
-                month: 6,
+            const state = (function () {
+                const now = new Date();
+                return {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
                 currency: localStorage.getItem("dsCurrency") || "USD",
                 isApiMode: false, // true = backend API, false = standalone/file
                 isFileMode: false, // true = data came from a dropped file
@@ -1690,7 +1692,8 @@
                 summary: null, // token summary (computeTokenSummary output)
                 balance: null, // from summary API (biz_data.normal_wallets[0].balance)
                 balanceCurrency: "USD", // from summary API
-            };
+                };
+            })();
 
             // ── DOM refs ──
 
@@ -1947,9 +1950,9 @@
                     console.error("[reload] renderCalendar error:", e);
                 }
                 try {
-                    selectFirstDayWithData();
+                    selectCurrentDay();
                 } catch (e) {
-                    console.error("[reload] selectFirstDayWithData error:", e);
+                    console.error("[reload] selectCurrentDay error:", e);
                 }
             }
 
@@ -2280,8 +2283,22 @@
                 detailBody.innerHTML = html;
             }
 
-            function selectFirstDayWithData() {
+            function selectCurrentDay() {
                 if (!state.data) return;
+                // Try to select today's date first
+                const now = new Date();
+                const todayStr =
+                    state.year + "-" + pad(state.month) + "-" + pad(now.getDate());
+                if (
+                    now.getFullYear() === state.year &&
+                    now.getMonth() + 1 === state.month &&
+                    state.data[todayStr] &&
+                    state.data[todayStr].length > 0
+                ) {
+                    selectDay(todayStr);
+                    return;
+                }
+                // Fall back to first day with data in current month
                 const sorted = Object.keys(state.data).sort();
                 for (const dateStr of sorted) {
                     if (
