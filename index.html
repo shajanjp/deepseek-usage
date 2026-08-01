@@ -1474,6 +1474,17 @@
                     headers.forEach(function (h, idx) {
                         row[h] = idx < values.length ? values[idx] : "";
                     });
+                    // DeepSeek changed utc_date from YYYY-MM-DD to YYYYMMDD;
+                    // normalize to YYYY-MM-DD so date matching keeps working.
+                    const rawDate = row.utc_date;
+                    if (rawDate && rawDate.length === 8 && !rawDate.includes("-")) {
+                        row.utc_date =
+                            rawDate.slice(0, 4) +
+                            "-" +
+                            rawDate.slice(4, 6) +
+                            "-" +
+                            rawDate.slice(6, 8);
+                    }
                     rows.push(row);
                 }
                 return rows;
